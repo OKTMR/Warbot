@@ -1,5 +1,31 @@
 from math import *
 
+class Trigo(object):
+    @staticmethod
+    def getPolarFromMessage(message):
+        polarA = {'distance': float(message.getDistance()),
+                  'angle': float(message.getAngle())}
+        carthesianA = toCarthesian(polarA)
+
+        polarO = {'distance': float(message.getContent()[0]),
+                  'angle': float(message.getContent()[1])}
+        carthesianO = toCarthesian(polarO)
+
+        carthesianTarget={'x':carthesianA['x'] + carthesianO['x'],
+                         'y': carthesianA['y'] + carthesianO['y']}
+        polarTarget = toPolar(carthesianTarget)
+        return polarTarget
+
+    @staticmethod
+    def toCarthesian(polar):
+        return {'x': polar['distance'] * cos(radians(polar['angle'])),
+                'y': polar['distance'] * sin(radians(polar['angle']))}
+
+    @staticmethod
+    def toPolar(carthesian):
+        return {'distance':hypot(carthesian['x'],carthesian['y']),
+                'angle':degrees(atan2(carthesian['y'],carthesian['x']))}
+
 class HarvestState(object):
     @staticmethod
     def execute():
@@ -45,30 +71,10 @@ class SearchState(object):
             return HarvestState.execute()
         for message in dico['messages'] :
             if(message.getSenderType() == WarAgentType.WarExplorer):
-                angle = trigo(message)
+                angle = Trigo.getPolarFromMessage(message)
                 setHeading(angle)
 
         return move()
-
-def trigo(message):
-    polarA = {'distance': float(message.getDistance()),
-              'angle': float(message.getAngle())}
-    carthesianA = toCarthesian(polarA)
-
-    polarO = {'distance': float(message.getContent()[0]),
-              'angle': float(message.getContent()[1])}
-    carthesianO = toCarthesian(polarO)
-
-    carthesianTarget={'x':carthesianA['x'] + carthesianO['x'],
-                     'y': carthesianA['y'] + carthesianO['y']}
-    polarTarget = toPolar(carthesianTarget)
-    return polarTarget
-
-def toCarthesian(polar):
-    return {'x' : polar['distance'] * cos(radians(polar['angle'])), 'y':polar['distance'] * sin(radians(polar['angle']))}
-
-def toPolar(carthesian):
-    return {'distance':hypot(carthesian['x'],carthesian['y']),'angle':degrees(atan2(carthesian['y'],carthesian['x']))}
 
 def actionWarExplorer():
     dico['percepts'] = []
@@ -100,12 +106,7 @@ def actionWarExplorer():
         actionWarExplorer.currentState = actionWarExplorer.nextState
         actionWarExplorer.nextState = None
 
-    if actionWarExplorer.currentState:
-        return actionWarExplorer.currentState.execute()
-    else:
-        result = SearchState.execute()
-        actionWarExplorer.nextState = SearchState
-        return result
+    return actionWarExplorer.currentState.execute()
 
 # Initialisation des variables
 dico = {}
