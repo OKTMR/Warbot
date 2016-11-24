@@ -1,4 +1,4 @@
-
+from math import *
 
 class HarvestState(object):
     @staticmethod
@@ -45,8 +45,11 @@ class SearchState(object):
             return HarvestState.execute()
         for message in dico['messages'] :
             if(message.getSenderType() == WarAgentType.WarExplorer):
-                setHeading(trigo(message.getDistance(),message.getAngle(),message.getContent()[0],message.getContent()[1])["angle"]);
-
+                distanceA = message.getDistance()
+                angleA = message.getAngle()
+                distanceO = float(message.getContent()[0])
+                angleO = float(message.getContent()[1])
+                setHeading(getTargetedAgentPosition(distanceA,angleA,distanceO,angleO).getAngle())
         return move()
 
 def trigo(distanceA,angleA,distanceO,angleO):
@@ -58,8 +61,7 @@ def trigo(distanceA,angleA,distanceO,angleO):
     dY = aY + oY
     distanceD = hypot(dX,dY)
     angleD = atan (dX / dY)
-    return {"distance" : distanceD, "angle" : angleD}
-
+    return [distanceD,angleD]
 def actionWarExplorer():
 
     dico['percepts'] = []
@@ -77,7 +79,7 @@ def actionWarExplorer():
         if percept.getType().equals(WarAgentType.WarFood) :
             dico['ressources'].append(percept)
     if((dico['ressources'] is not None) and (len(dico['ressources']) != 0)):
-        broadcastMessageToAgentType(WarAgentType.WarExplorer,"FoodHere",str(dico['ressources'][0].getDistance()),str(dico['ressources'][0].getAngle()))
+        broadcastMessageToAgentType(WarAgentType.WarExplorer,"FoodHere",[str(dico['ressources'][0].getDistance()),str(dico['ressources'][0].getAngle())])
 
 
     dico['messages'] = getMessages()
