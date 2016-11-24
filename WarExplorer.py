@@ -5,15 +5,15 @@ class Trigo(object):
     def getPolarFromMessage(message):
         polarA = {'distance': float(message.getDistance()),
                   'angle': float(message.getAngle())}
-        carthesianA = toCarthesian(polarA)
+        carthesianA = Trigo.toCarthesian(polarA)
 
         polarO = {'distance': float(message.getContent()[0]),
                   'angle': float(message.getContent()[1])}
-        carthesianO = toCarthesian(polarO)
+        carthesianO = Trigo.toCarthesian(polarO)
 
         carthesianTarget={'x':carthesianA['x'] + carthesianO['x'],
                          'y': carthesianA['y'] + carthesianO['y']}
-        polarTarget = toPolar(carthesianTarget)
+        polarTarget = Trigo.toPolar(carthesianTarget)
         return polarTarget
 
     @staticmethod
@@ -69,11 +69,14 @@ class SearchState(object):
         if(len(dico['ressources']) != 0):
             actionWarExplorer.currentState = HarvestState
             return HarvestState.execute()
-        for message in dico['messages'] :
-            if(message.getSenderType() == WarAgentType.WarExplorer):
-                angle = Trigo.getPolarFromMessage(message)
-                setHeading(angle)
-
+        
+        if((dico['messagesFood'] is not None) and (len(dico['messagesFood']) != 0)):
+            for message in dico['messagesFood'] :
+                if(message.getSenderType() == WarAgentType.WarExplorer):
+                    tritri = Trigo.getPolarFromMessage(message)
+                    angle = tritri['angle']
+                    distance = tritri['distance']
+                    setHeading(angle)
         return move()
 
 def actionWarExplorer():
@@ -82,11 +85,11 @@ def actionWarExplorer():
     dico['percepts_alliesBase'] = []
     dico['ressources'] = []
     dico['messages'] = []
+    dico['messagesFood'] = []
 
     dico['percepts'] = getPercepts()
     dico['percepts_enemies'] = getPerceptsEnemies()
     dico['percepts_alliesBase'] = getPerceptsAlliesByType(WarAgentType.WarBase)
-    dico['messages'] = getMessages()
     #percept ressources
     for percept in dico['percepts']:
         if percept.getType().equals(WarAgentType.WarFood) :
@@ -94,9 +97,12 @@ def actionWarExplorer():
 
     if((dico['ressources'] is not None) and (len(dico['ressources']) != 0)):
         broadcastMessageToAgentType(WarAgentType.WarExplorer,"FoodHere",[str(dico['ressources'][0].getDistance()),str(dico['ressources'][0].getAngle())])
-
-
+    
     dico['messages'] = getMessages()
+
+    for message in dico['messages']:
+        if(message.getSenderType() == WarAgentType.WarExplorer):
+            dico['messagesFood'].append(message)
 
     if (isBlocked()) :
         RandomHeading()
