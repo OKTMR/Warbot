@@ -1,4 +1,4 @@
-
+from math import *
 
 class HarvestState(object):
     @staticmethod
@@ -11,7 +11,7 @@ class HarvestState(object):
                     actionWarExplorer.nextState = GoHomeState
                 else:
                     actionWarExplorer.nextState = SearchState
-                    setDebugString("Je prends la bouffe") 
+                    setDebugString("Je prends la bouffe")
                 return take()
             else:
                 actionWarExplorer.nextState = SearchState
@@ -45,29 +45,38 @@ class SearchState(object):
             return HarvestState.execute()
         for message in dico['messages'] :
             if(message.getSenderType() == WarAgentType.WarExplorer):
-                setHeading(trigo(message.getDistance(),message.getAngle(),message.getContent()[0],message.getContent()[1])["angle"]);
+                angle = trigo(message)
+                setHeading(angle)
 
         return move()
 
-def trigo(distanceA,angleA,distanceO,angleO):
-    aX = distanceA*cos(angleA)
-    aY = distanceA*sin(angleA)
-    oX = distanceO*cos(angleO)
-    oY = distanceO*sin(angleO)
-    dX = aX + oX
-    dY = aY + oY
-    distanceD = hypot(dX,dY)
-    angleD = atan (dX / dY)
-    return {"distance" : distanceD, "angle" : angleD}
+def trigo(message):
+    polarA = {'distance': float(message.getDistance()),
+              'angle': float(message.getAngle())}
+    carthesianA = toCarthesian(polarA)
+
+    polarO = {'distance': float(message.getContent()[0]),
+              'angle': float(message.getContent()[1])}
+    carthesianO = toCarthesian(polarO)
+
+    carthesianTarget={'x':carthesianA['x'] + carthesianO['x'],
+                     'y': carthesianA['y'] + carthesianO['y']}
+    polarTarget = toPolar(carthesianTarget)
+    return polarTarget
+
+def toCarthesian(polar):
+    return {'x' : polar['distance'] * cos(radians(polar['angle'])), 'y':polar['distance'] * sin(radians(polar['angle']))}
+
+def toPolar(carthesian):
+    return {'distance':hypot(carthesian['x'],carthesian['y']),'angle':degrees(atan2(carthesian['y'],carthesian['x']))}
 
 def actionWarExplorer():
-
     dico['percepts'] = []
     dico['percepts_enemies'] = []
     dico['percepts_alliesBase'] = []
     dico['ressources'] = []
     dico['messages'] = []
-    
+
     dico['percepts'] = getPercepts()
     dico['percepts_enemies'] = getPerceptsEnemies()
     dico['percepts_alliesBase'] = getPerceptsAlliesByType(WarAgentType.WarBase)
@@ -76,8 +85,9 @@ def actionWarExplorer():
     for percept in dico['percepts']:
         if percept.getType().equals(WarAgentType.WarFood) :
             dico['ressources'].append(percept)
+
     if((dico['ressources'] is not None) and (len(dico['ressources']) != 0)):
-        broadcastMessageToAgentType(WarAgentType.WarExplorer,"FoodHere",str(dico['ressources'][0].getDistance()),str(dico['ressources'][0].getAngle()))
+        broadcastMessageToAgentType(WarAgentType.WarExplorer,"FoodHere",[str(dico['ressources'][0].getDistance()),str(dico['ressources'][0].getAngle())])
 
 
     dico['messages'] = getMessages()
