@@ -32,7 +32,7 @@ class HarvestState(object):
         setDebugString("On va chercher la bouffe")
         for percept in dico['ressources']:
             setHeading(percept.getAngle())
-            if(percept.getDistance() <= getMaxDistanceTakeFood()):
+            if(percept.getDistance() < getMaxDistanceTakeFood()):
                 if (getNbElementsInBag() >= getBagSize() - 1):
                     actionWarExplorer.nextState = GoHomeState
                 else:
@@ -50,7 +50,9 @@ class GoHomeState(object):
         if((dico['percepts_alliesBase'] is not None) and (len(dico['percepts_alliesBase']) != 0)):
             base = dico['percepts_alliesBase'][0]
             if(base.getDistance() < maxDistanceGive()):
-                actionWarExplorer.nextState = SearchState
+                if getNbElementsInBag() <= 1:
+                    actionWarExplorer.nextState = SearchState
+                setIdNextAgentToGive(base.getID());
                 return give()
             else:
                 return move()
@@ -69,7 +71,7 @@ class SearchState(object):
         if(len(dico['ressources']) != 0):
             actionWarExplorer.currentState = HarvestState
             return HarvestState.execute()
-        
+
         if((dico['messagesFood'] is not None) and (len(dico['messagesFood']) != 0)):
             for message in dico['messagesFood'] :
                 if(message.getSenderType() == WarAgentType.WarExplorer):
@@ -97,7 +99,7 @@ def actionWarExplorer():
 
     if((dico['ressources'] is not None) and (len(dico['ressources']) != 0)):
         broadcastMessageToAgentType(WarAgentType.WarExplorer,"FoodHere",[str(dico['ressources'][0].getDistance()),str(dico['ressources'][0].getAngle())])
-    
+
     dico['messages'] = getMessages()
 
     for message in dico['messages']:
