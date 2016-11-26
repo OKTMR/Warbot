@@ -3,7 +3,7 @@ IconPath: oktamer.jpg
 SoundPath: dekat.wav
 Description: |
     No rage de nos ravages
-BrainsPackage: inGameTeams.python_teamFunction_level_0
+BrainsPackage: oktamer
 ScriptImplementation: python
 AgentsBrainClasses:
     WarBase: WarBase.py
