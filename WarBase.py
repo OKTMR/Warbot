@@ -1,14 +1,17 @@
 import sys
+from pprint import pprint
 if "./teams/" not in sys.path:
     sys.path.append('./teams/')
 
-from oktamer.utils import Trigo  # noqa
+if "Trigo" not in sys.modules:
+    from oktamer.utils import *  # noqa
 
 # =============================================================================#
 # =============================================================================#
 #                              Beginning
 # =============================================================================#
 # =============================================================================#
+pprint(sys.modules)
 
 
 def actionWarBase():

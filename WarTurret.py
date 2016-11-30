@@ -5,21 +5,16 @@ class RotateState(object):
         if len(dico['targets']) > 0 and isReloaded():
             setDebugString("KILL")
             actionWarTurret.currentState = FireState
-            if len(dico['targets']) > 1:
-                for potential_target in dico['targets']:
-                    if potential_target.getDistance() < target.getDistance():
-                        target = potential_target
-                return FireState.execute()
-            else:
-                return FireState.execute()
+
+            for potential_target in dico['targets']:
+                if potential_target.getDistance() < target.getDistance():
+                    target = potential_target
+            return FireState.execute()
+
         else:
             setDebugString("Je change d'angle")
-            currentAngle = getHeading()
-            currentAngle += 90
-            if currentAngle >= 360:
-                currentAngle = currentAngle - 360
-            setHeading(currentAngle)
-            actionWarTurret.nextState = RotateState
+            setHeading((getHeading() + 90) % 360)
+            setViewDirection((getHeading() + 90) % 360)
 
 
 class ReloadState(object):
