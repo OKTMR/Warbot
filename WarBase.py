@@ -119,6 +119,7 @@ def actionWarBase():
     """
 # I AM HERE
     broadcastMessageToAgentType(WarAgentType.WarExplorer, 'base', '')
+    broadcastMessageToAgentType(WarAgentType.WarEngineer, 'base', '')
     setDebugString(str(getNbElementsInBag()))
 
 # Recieving messages
@@ -154,12 +155,11 @@ def actionWarBase():
 
     if(getHealth() < getMaxHealth()/1.5):
         if getHealth() > 2000:
-            setNextAgentToCreate(WarAgentType.WarEngineer)
-            return create()
+            return createEngineer()
         else:
             return idle()
     else:
-        setNextAgentToCreate(WarAgentType.WarLight)
+        setNextAgentToCreate(WarAgentType.WarKamikaze)
         return create()
 
 dico = {}

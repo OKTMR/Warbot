@@ -13,8 +13,8 @@ class RotateState(object):
 
         else:
             setDebugString("Je change d'angle")
-            setHeading((getHeading() + 90) % 360)
-            setViewDirection((getHeading() + 90) % 360)
+            setHeading((getHeading() + 180) % 360)
+            return idle()
 
 
 class ReloadState(object):
@@ -37,7 +37,6 @@ class FireState(object):
 
 def actionWarTurret():
     dico['targets'] = getPerceptsEnemies()
-    print(dico['targets'])
     if len(dico['targets']) != 0:
         target = dico['targets'][0]
     if actionWarTurret.nextState is not None:
