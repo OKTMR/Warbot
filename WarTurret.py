@@ -1,15 +1,7 @@
-class SearchState(object):
+class RotateState(object):
 	@staticmethod
 	def execute():
-		if isReloading():
-			setDebugString("Je recharge")
-			actionWarTurret.currentState = ReloadingState
-			return ReloadingState.execute()
-		if !isReloaded():
-			setDebugString("Je dois rechager")
-			actionWarTurret.currentState = ReloadState
-			return ReloadState.execute()
-		elif len(dico['targets']) != 0:
+		if len(dico['targets']) > 0:
 			setDebugString("KILL")
 			actionWarTurret.currentState = FireState
 			if len(dico['targets']) > 1:	
@@ -21,22 +13,18 @@ class SearchState(object):
 				return FireState.execute()
 		else:
 			setDebugString("Je change d'angle")
+			currentAngle = getHeading()
+			currentAngle += 90
+			if currentAngle >= 360:
+				currentAngle = currentAngle - 360
+				setHeading(currentAngle)
 			actionWarTurret.currentState = RotateState
 			return RotateState.execute()
-
-class ReloadingState(object):
-	@staticmethod
-	def execute():
-		if isReloading():
-			return ReloadingState.execute()
-		else:
-			actionWarTurret.currentState = SearchState
-			return SearchState.execute()
 
 class ReloadState(object):
 	@staticmethod
 	def execute():
-		actionWarTurret.nextState = SearchState
+		actionWarTurret.nextState = RotateState
 		return reloadWeapon()
 
 class FireState(object):
@@ -44,21 +32,12 @@ class FireState(object):
 	def execute():
 		setHeading(target.getAngle())
 		setTargetDistance(target.getDistance())
-		return fire()
-
-class RotateState(object):
-	@staticmethod
-	def execute():
-		currentAngle = getHeading()
-		currentAngle += 90
-		if currentAngle >= 360:
-			currentAngle = currentAngle - 360
-		setHeading(currentAngle)
-		actionWarTurret.currentState = SearchState
-		return SearchState.execute()	
+		actionWarTurret.nextState = ReloadState
+		return fire()	
 
 def actionWarTurret():
 	dico['targets'] = getPerceptsEnemies()
+	print(dico['targets'])
 	if len(dico['targets']) != 0:
 		target = dico['targets'][0]
 	if actionWarTurret.nextState != None:
@@ -69,5 +48,5 @@ def actionWarTurret():
 # Initialisation des variables
 dico = {}
 target = None
-actionWarTurret.nextState = SearchState
+actionWarTurret.nextState = RotateState
 actionWarTurret.currentState = None
