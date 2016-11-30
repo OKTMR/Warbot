@@ -1,19 +1,23 @@
+from math import *
 # =============================================================================#
 # =============================================================================#
 #                                   Trigo
 # =============================================================================#
 # =============================================================================#
+
+
 class Trigo(object):
+
     @staticmethod
-    def getCarthesianTarget(carthesianSender,carthesianObjective):
+    def getCarthesianTarget(carthesianSender, carthesianObjective):
         return {'x': carthesianSender['x'] + carthesianObjective['x'],
                 'y': carthesianSender['y'] + carthesianObjective['y']}
 
     @staticmethod
-    def getPolarTarget(polarSender,polarObjective):
+    def getPolarTarget(polarSender, polarObjective):
         carthesianTarget = Trigo.getCarthesianTarget(
-                Trigo.toCarthesian(polarSender),
-                Trigo.toCarthesian(polarObjective))
+            Trigo.toCarthesian(polarSender),
+            Trigo.toCarthesian(polarObjective))
 
         return Trigo.toPolar(carthesianTarget)
 
@@ -24,7 +28,7 @@ class Trigo(object):
 
         polarO = {'distance': float(message.getContent()[0]),
                   'angle': float(message.getContent()[1])}
-        return Trigo.getPolarTarget(polarA,polarO)
+        return Trigo.getPolarTarget(polarA, polarO)
 
     @staticmethod
     def toCarthesian(polar):
@@ -33,8 +37,9 @@ class Trigo(object):
 
     @staticmethod
     def toPolar(carthesian):
-        return {'distance': hypot(carthesian['x'],carthesian['y']),
-                'angle': (degrees(atan2(carthesian['y'],carthesian['x'])) + 360) % 360}
+        return {'distance': hypot(carthesian['x'], carthesian['y']),
+                'angle': (degrees(atan2(carthesian['y'], carthesian['x'])) +
+                          360) % 360}
 
     @staticmethod
     def roundCoordinates(carthesian):
@@ -44,8 +49,12 @@ class Trigo(object):
 
     @staticmethod
     def myfloor(x):
-        return int(5 * round(float(x)/5))
+        return int(5 * round(float(x) / 5))
+
+    @staticmethod
+    def diffAngle(firstAngle, secondAngle):
+        return abs((firstAngle - secondAngle + 180 + 360) % 360 - 180)
 
     @staticmethod
     def inView(viewAngle, angleOfView, targetAngle):
-        return abs((viewAngle - targetAngle + 180 + 360) % 360 - 180) < (angleOfView/2)
+        return Trigo.diffAngle(viewAngle, targetAngle) < (angleOfView / 2)
