@@ -1,27 +1,28 @@
-class RotateState(object):
+class ObserveState(object):
 
     @staticmethod
     def execute():
         if len(dico['targets']) > 0 and isReloaded():
-            setDebugString("KILL")
+            setDebugString("Fire !!!")
             actionWarTurret.currentState = FireState
 
             for potential_target in dico['targets']:
-                if potential_target.getDistance() < target.getDistance():
-                    target = potential_target
+                if potential_target.getDistance() < dico['targets'][0].getDistance():
+                    dico['targets'][0] = potential_target
             return FireState.execute()
 
         else:
-            setDebugString("Je change d'angle")
-            setHeading((getHeading() + 180) % 360)
+            setDebugString("Hold on to this position")
+            setHeading((getHeading() + 90) % 360)
+            setViewDirection((getHeading() + 90) % 360)
             return idle()
-
 
 class ReloadState(object):
 
     @staticmethod
     def execute():
-        actionWarTurret.nextState = RotateState
+        setDebugString("Je recharge")
+        actionWarTurret.nextState = ObserveState
         return reloadWeapon()
 
 
@@ -29,16 +30,16 @@ class FireState(object):
 
     @staticmethod
     def execute():
-        setHeading(target.getAngle())
-        setTargetDistance(target.getDistance())
+        setDebugString("Projectile lancé !!!")
+        setHeading(dico['targets'][0].getAngle())
+        setTargetDistance(dico['targets'][0].getDistance())
         actionWarTurret.nextState = ReloadState
         return fire()
 
 
 def actionWarTurret():
     dico['targets'] = getPerceptsEnemies()
-    if len(dico['targets']) != 0:
-        target = dico['targets'][0]
+    print(dico['targets'])
     if actionWarTurret.nextState is not None:
         actionWarTurret.currentState = actionWarTurret.nextState
         actionWarTurret.nextState = None
@@ -46,6 +47,5 @@ def actionWarTurret():
 
 # Initialisation des variables
 dico = {}
-target = None
-actionWarTurret.nextState = RotateState
+actionWarTurret.nextState = ReloadState
 actionWarTurret.currentState = None

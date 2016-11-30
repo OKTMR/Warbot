@@ -158,9 +158,10 @@ def actionWarBase():
             return createEngineer()
         else:
             return idle()
-    else:
+    elif random() > 0.9:
         setNextAgentToCreate(WarAgentType.WarKamikaze)
         return create()
+    return idle()
 
 dico = {}
 dico['messages_ressources'] = []
