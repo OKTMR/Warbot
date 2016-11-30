@@ -1,7 +1,7 @@
 class RotateState(object):
 	@staticmethod
 	def execute():
-		if len(dico['targets']) > 0:
+		if len(dico['targets']) > 0 and isReloaded():
 			setDebugString("KILL")
 			actionWarTurret.currentState = FireState
 			if len(dico['targets']) > 1:	
@@ -17,9 +17,8 @@ class RotateState(object):
 			currentAngle += 90
 			if currentAngle >= 360:
 				currentAngle = currentAngle - 360
-				setHeading(currentAngle)
-			actionWarTurret.currentState = RotateState
-			return RotateState.execute()
+			setHeading(currentAngle)
+			actionWarTurret.nextState = RotateState
 
 class ReloadState(object):
 	@staticmethod
