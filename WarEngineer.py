@@ -1,3 +1,4 @@
 
 def actionWarEngineer():
-    return move()
+	setNextBuildingToBuild(WarAgentType.Wall)
+	return build()

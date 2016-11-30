@@ -1,8 +1,8 @@
-import sys
-if "./teams/" not in sys.path:
-    sys.path.append('./teams/')
+#import sys
+#if "./teams/" not in sys.path:
+#    sys.path.append('./teams/')
 
-from oktamer.utils import Trigo, Stats, Predict  # noqa
+#from oktamer.utils import Trigo, Stats, Predict  # noqa
 
 # =============================================================================#
 # =============================================================================#
