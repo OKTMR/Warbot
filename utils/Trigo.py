@@ -31,6 +31,13 @@ class Trigo(object):
         return Trigo.getPolarTarget(polarA, polarO)
 
     @staticmethod
+    def getPolarAgentFromMessage(message):
+        agent = Trigo.getPolarFromMessage(message)
+        agent['heading'] = (float(message.getContent()[2]) + 360) % 360
+        agent['type'] = str(message.getContent()[3])
+        return agent
+
+    @staticmethod
     def toCarthesian(polar):
         return {'x': polar['distance'] * cos(radians(polar['angle'])),
                 'y': polar['distance'] * sin(radians(polar['angle']))}

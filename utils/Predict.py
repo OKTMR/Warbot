@@ -14,12 +14,15 @@ class Predict(object):
 
     @staticmethod
     def collision(targetPos, targetHeading, mySpeed):
+        # pas encore sur si vraiment utile ....
+        # targetPos = Trigo.getPolarTarget(targetPos, targetHeading)
         targetHeading = Predict.redefAngle(
             (targetPos['angle'] + 270) % 360, targetHeading)
         targetVector = Trigo.toCarthesian(targetHeading)
 
-        valueY = Trigo.diffAngle(mySpeed, targetVector['x'])
-        collisionTime = targetPos['distance'] / (valueY + targetVector['y'])
+        valueY = sqrt(pow(mySpeed, 2) - pow(targetVector['x'], 2))
+        collisionTime = targetPos['distance'] / \
+            ((valueY * 2) + targetVector['y'])
 
         relativeAngle = (degrees(atan2(valueY, targetVector['x'])) + 360) % 360
         relativeCollision = {'distance': mySpeed *

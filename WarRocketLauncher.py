@@ -80,7 +80,7 @@ class Predict(object):
             (targetPos['angle'] + 270) % 360, targetHeading)
         targetVector = Trigo.toCarthesian(targetHeading)
 
-        valueY = Trigo.diffAngle(mySpeed, targetVector['x'])
+        valueY = sqrt(pow(mySpeed, 2) - pow(targetVector['x'], 2))
         collisionTime = targetPos['distance'] / (valueY + targetVector['y'])
 
         relativeAngle = (degrees(atan2(valueY, targetVector['x'])) + 360) % 360

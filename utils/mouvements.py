@@ -1,20 +1,15 @@
-import edu.warbot.agents.agents as a
-import edu.warbot.agents.projectiles as p
-
-
 # =============================================================================#
 # =============================================================================#
-#                                   Stats
+#                             Planned mouvements
 # =============================================================================#
 # =============================================================================#
 
 
-class Stats(object):
-
-    @staticmethod
-    def agent(agent):
-        return getattr(a, str(agent))
-
-    @staticmethod
-    def projectile(projectile):
-        return getattr(p, str(projectile))
+def mouvement():
+    if dico['mouvement']:
+        setHeading(dico['heading'] + 20)
+        dico['mouvement'] = False
+    else:
+        setHeading(dico['heading'] - 20)
+        dico['mouvement'] = True
+    return move()

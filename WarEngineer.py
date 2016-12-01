@@ -1,10 +1,17 @@
 from pprint import pprint
-# pprint( globals())
+
 
 def actionWarEngineer():
     dico = getPerceptsAlliesByType(WarAgentType.WarBase)
     baseDistance = None
-    if len(dico) > 0 :
+    if getHealth() < 20:
+        return "die"
+
+    if isBlocked():
+        RandomHeading()
+        return move()
+
+    if len(dico) > 0:
         baseAngle = dico[0].getAngle()
         baseId = dico[0].getID()
         baseDistance = dico[0].getDistance()
@@ -23,5 +30,5 @@ def actionWarEngineer():
         else:
             setIdNextBuildingToRepair(baseId)
             return WA.repair()
-    else :
+    else:
         return idle()

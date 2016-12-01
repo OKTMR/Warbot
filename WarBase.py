@@ -1,4 +1,7 @@
 from math import *
+from random import random
+import edu.warbot.agents.agents as a
+import edu.warbot.agents.projectiles as p
 
 # =============================================================================#
 # =============================================================================#
@@ -6,15 +9,17 @@ from math import *
 # =============================================================================#
 # =============================================================================#
 
+
 class Stats(object):
 
     @staticmethod
     def agent(agent):
-        return getattr(a, agent)
+        return getattr(a, str(agent))
 
     @staticmethod
     def projectile(projectile):
-        return getattr(p, projectile)
+        return getattr(p, str(projectile))
+
 
 # =============================================================================#
 # =============================================================================#
@@ -46,6 +51,13 @@ class Trigo(object):
         polarO = {'distance': float(message.getContent()[0]),
                   'angle': float(message.getContent()[1])}
         return Trigo.getPolarTarget(polarA, polarO)
+
+    @staticmethod
+    def getPolarAgentFromMessage(message):
+        agent = Trigo.getPolarFromMessage(message)
+        agent['heading'] = (float(message.getContent()[2]) + 360) % 360
+        agent['type'] = str(message.getContent()[3])
+        return agent
 
     @staticmethod
     def toCarthesian(polar):
@@ -96,7 +108,7 @@ class Predict(object):
             (targetPos['angle'] + 270) % 360, targetHeading)
         targetVector = Trigo.toCarthesian(targetHeading)
 
-        valueY = Trigo.diffAngle(mySpeed, targetVector['x'])
+        valueY = sqrt(pow(mySpeed, 2) - pow(targetVector['x'], 2))
         collisionTime = targetPos['distance'] / (valueY + targetVector['y'])
 
         relativeAngle = (degrees(atan2(valueY, targetVector['x'])) + 360) % 360
@@ -118,12 +130,14 @@ def actionWarBase():
     - the food is located by a rounding of 5 distance between each food
     """
 # I AM HERE
-    broadcastMessageToAgentType(WarAgentType.WarExplorer, 'base', '')
-    broadcastMessageToAgentType(WarAgentType.WarEngineer, 'base', '')
+    broadcastMessageToAll('base', '')
     setDebugString(str(getNbElementsInBag()))
 
 # Recieving messages
     dico['messages'] = getMessages()
+    dico['messages_enemies'] = []
+    dico['messages_enemies_duplicate'] = []
+
     for message in dico['messages']:
         # FOOD
         # found
@@ -141,7 +155,13 @@ def actionWarBase():
                 dico['messages_ressources'].remove(food)
 
         # ENNEMIES
-
+        elif message.getMessage() == 'enemyFound':
+            enemy = Trigo.getPolarAgentFromMessage(message)
+            enemyRounded = Trigo.roundCoordinates(
+                Trigo.toCarthesian(enemy))
+            if enemyRounded not in dico['messages_enemies_duplicate']:
+                dico['messages_enemies_duplicate'].append(enemyRounded)
+                dico['messages_enemies'].append(enemy)
 
 # Sending messages
     # FOOD
@@ -152,13 +172,22 @@ def actionWarBase():
             str(polarFood['angle'])])
 
     # ENNEMIES
+    for enemy in dico['messages_enemies']:
+        broadcastMessageToAll('enemy', [
+            str(enemy['distance']),
+            str(enemy['angle']),
+            str(enemy['heading']),
+            str(enemy['type'])])
 
-    if(getHealth() < getMaxHealth()/1.5):
-        if getHealth() > 2000:
+    if getMaxHealth() - getHealth() >= 250 and getNbElementsInBag() > 0:
+        return eat()
+
+    if getHealth() < 5000:
+        if getHealth() > 4000 and random() < 0.5:
             return createEngineer()
         else:
             return idle()
-    elif random() > 0.9:
+    elif random() > 0.7:
         setNextAgentToCreate(WarAgentType.WarKamikaze)
         return create()
     return idle()

@@ -1,4 +1,4 @@
-<<<<<<< HEAD
+from math import *
 # =============================================================================#
 # =============================================================================#
 #                                   Trigo
@@ -29,6 +29,13 @@ class Trigo(object):
         polarO = {'distance': float(message.getContent()[0]),
                   'angle': float(message.getContent()[1])}
         return Trigo.getPolarTarget(polarA, polarO)
+
+    @staticmethod
+    def getPolarAgentFromMessage(message):
+        agent = Trigo.getPolarFromMessage(message)
+        agent['heading'] = (float(message.getContent()[2]) + 360) % 360
+        agent['type'] = str(message.getContent()[3])
+        return agent
 
     @staticmethod
     def toCarthesian(polar):
@@ -79,7 +86,7 @@ class Predict(object):
             (targetPos['angle'] + 270) % 360, targetHeading)
         targetVector = Trigo.toCarthesian(targetHeading)
 
-        valueY = Trigo.diffAngle(mySpeed, targetVector['x'])
+        valueY = sqrt(pow(mySpeed, 2) - pow(targetVector['x'], 2))
         collisionTime = targetPos['distance'] / (valueY + targetVector['y'])
 
         relativeAngle = (degrees(atan2(valueY, targetVector['x'])) + 360) % 360
@@ -89,15 +96,6 @@ class Predict(object):
         return Predict.redefAngle(-(targetPos['angle'] + 270) % 360,
                                   relativeCollision)
 
-
-
-=======
-#import sys
-#if "./teams/" not in sys.path:
-#    sys.path.append('./teams/')
-
-#from oktamer.utils import Trigo, Stats, Predict  # noqa
->>>>>>> c7d9fd0612ed7fc2dcb6d7e2a9fb785352dbcb1c
 
 # =============================================================================#
 # =============================================================================#
@@ -150,6 +148,14 @@ def actionWarExplorer():
                                     str(ressource.getDistance()),
                                     str(ressource.getAngle())])
 
+    # percept enemies
+    for enemy in dico['percepts_enemies']:
+        broadcastMessageToAgentType(WarAgentType.WarBase, 'enemyFound', [
+                                    str(enemy.getDistance()),
+                                    str(enemy.getAngle()),
+                                    str(enemy.getHeading()),
+                                    str(enemy.getType())])
+
     # messages
     dico['messages'] = getMessages()
 
@@ -161,8 +167,7 @@ def actionWarExplorer():
             confirmFoodExistance = True
 
             if (food['distance'] < distanceOfView() and
-                    Trigo.inView(getHeading(), angleOfView(),
-                                 food['angle'])):
+                    Trigo.inView(getHeading(), angleOfView(), food['angle'])):
                 inPerception = False
 
                 for ressource in dico['percepts_ressources']:
