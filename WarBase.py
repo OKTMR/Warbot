@@ -53,10 +53,29 @@ class Trigo(object):
         return Trigo.getPolarTarget(polarA, polarO)
 
     @staticmethod
+    def getCarthesianFromMessage(message):
+        carthesianA = Trigo.toCarthesian(
+            {'distance': float(message.getDistance()),
+             'angle': float(message.getAngle())})
+
+        carthesianO = {'x': float(message.getContent()[0]),
+                       'y': float(message.getContent()[1])}
+        return Trigo.getCarthesianTarget(carthesianA, carthesianO)
+
+    @staticmethod
     def getPolarAgentFromMessage(message):
         agent = Trigo.getPolarFromMessage(message)
         agent['heading'] = (float(message.getContent()[2]) + 360) % 360
         agent['type'] = str(message.getContent()[3])
+        agent['id'] = str(message.getContent()[4])
+        return agent
+
+    @staticmethod
+    def getCarthesianAgentFromMessage(message):
+        agent = Trigo.getCarthesianFromMessage(message)
+        agent['heading'] = (float(message.getContent()[2]) + 360) % 360
+        agent['type'] = str(message.getContent()[3])
+        agent['id'] = str(message.getContent()[4])
         return agent
 
     @staticmethod
@@ -104,12 +123,15 @@ class Predict(object):
 
     @staticmethod
     def collision(targetPos, targetHeading, mySpeed):
+        # pas encore sur si vraiment utile ....
+        # targetPos = Trigo.getPolarTarget(targetPos, targetHeading)
         targetHeading = Predict.redefAngle(
             (targetPos['angle'] + 270) % 360, targetHeading)
         targetVector = Trigo.toCarthesian(targetHeading)
 
         valueY = sqrt(pow(mySpeed, 2) - pow(targetVector['x'], 2))
-        collisionTime = targetPos['distance'] / (valueY + targetVector['y'])
+        collisionTime = targetPos['distance'] / \
+            (valueY + targetVector['y'])
 
         relativeAngle = (degrees(atan2(valueY, targetVector['x'])) + 360) % 360
         relativeCollision = {'distance': mySpeed *
@@ -133,52 +155,15 @@ def actionWarBase():
     broadcastMessageToAll('base', '')
     setDebugString(str(getNbElementsInBag()))
 
-# Recieving messages
     dico['messages'] = getMessages()
     dico['messages_enemies'] = []
-    dico['messages_enemies_duplicate'] = []
 
-    for message in dico['messages']:
-        # FOOD
-        # found
-        if message.getMessage() == 'food':
-            food = Trigo.roundCoordinates(
-                Trigo.toCarthesian(Trigo.getPolarFromMessage(message)))
-            if food not in dico['messages_ressources']:
-                dico['messages_ressources'].append(food)
+    # Recieving messages
+    recievingMessages()
+    # Sending messages
+    sendingMessages()
 
-        # not found
-        elif message.getMessage() == 'nofood':
-            food = Trigo.roundCoordinates(
-                Trigo.toCarthesian(Trigo.getPolarFromMessage(message)))
-            if food in dico['messages_ressources']:
-                dico['messages_ressources'].remove(food)
-
-        # ENNEMIES
-        elif message.getMessage() == 'enemyFound':
-            enemy = Trigo.getPolarAgentFromMessage(message)
-            enemyRounded = Trigo.roundCoordinates(
-                Trigo.toCarthesian(enemy))
-            if enemyRounded not in dico['messages_enemies_duplicate']:
-                dico['messages_enemies_duplicate'].append(enemyRounded)
-                dico['messages_enemies'].append(enemy)
-
-# Sending messages
-    # FOOD
-    for food in dico['messages_ressources']:
-        polarFood = Trigo.toPolar(food)
-        broadcastMessageToAgentType(WarAgentType.WarExplorer, 'food', [
-            str(polarFood['distance']),
-            str(polarFood['angle'])])
-
-    # ENNEMIES
-    for enemy in dico['messages_enemies']:
-        broadcastMessageToAll('enemy', [
-            str(enemy['distance']),
-            str(enemy['angle']),
-            str(enemy['heading']),
-            str(enemy['type'])])
-
+    # TODO: State machine
     if getMaxHealth() - getHealth() >= 250 and getNbElementsInBag() > 0:
         return eat()
 
@@ -194,3 +179,50 @@ def actionWarBase():
 
 dico = {}
 dico['messages_ressources'] = []
+
+
+def recievingMessages():
+    for message in dico['messages']:
+            # FOOD
+            # found
+        if message.getMessage() == 'foodFound':
+            food = Trigo.roundCoordinates(
+                Trigo.getCarthesianFromMessage(message))
+            if food not in dico['messages_ressources']:
+                dico['messages_ressources'].append(food)
+
+            # not found
+        elif message.getMessage() == 'nofood':
+            food = Trigo.roundCoordinates(
+                Trigo.getCarthesianFromMessage(message))
+            if food in dico['messages_ressources']:
+                dico['messages_ressources'].remove(food)
+
+        # ENNEMIES
+        elif message.getMessage() == 'enemyFound':
+            enemy = Trigo.getCarthesianAgentFromMessage(message)
+            stored = False
+            for storedEnemy in dico['messages_enemies']:
+                if enemy['id'] == storedEnemy['id']:
+                    stored = True
+                    break
+
+            if not stored:
+                dico['messages_enemies'].append(enemy)
+
+
+def sendingMessages():
+    # FOOD
+    for food in dico['messages_ressources']:
+        broadcastMessageToAgentType(WarAgentType.WarExplorer, 'food', [
+            str(food['x']),
+            str(food['y'])])
+
+    # ENNEMIES
+    for enemy in dico['messages_enemies']:
+        broadcastMessageToAll('enemy', [
+            str(enemy['x']),
+            str(enemy['y']),
+            str(enemy['heading']),
+            str(enemy['type']),
+            str(enemy['id'])])

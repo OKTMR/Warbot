@@ -31,10 +31,29 @@ class Trigo(object):
         return Trigo.getPolarTarget(polarA, polarO)
 
     @staticmethod
+    def getCarthesianFromMessage(message):
+        carthesianA = Trigo.toCarthesian(
+            {'distance': float(message.getDistance()),
+             'angle': float(message.getAngle())})
+
+        carthesianO = {'x': float(message.getContent()[0]),
+                       'y': float(message.getContent()[1])}
+        return Trigo.getCarthesianTarget(carthesianA, carthesianO)
+
+    @staticmethod
     def getPolarAgentFromMessage(message):
         agent = Trigo.getPolarFromMessage(message)
         agent['heading'] = (float(message.getContent()[2]) + 360) % 360
         agent['type'] = str(message.getContent()[3])
+        agent['id'] = str(message.getContent()[4])
+        return agent
+
+    @staticmethod
+    def getCarthesianAgentFromMessage(message):
+        agent = Trigo.getCarthesianFromMessage(message)
+        agent['heading'] = (float(message.getContent()[2]) + 360) % 360
+        agent['type'] = str(message.getContent()[3])
+        agent['id'] = str(message.getContent()[4])
         return agent
 
     @staticmethod

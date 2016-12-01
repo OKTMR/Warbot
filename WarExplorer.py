@@ -31,10 +31,29 @@ class Trigo(object):
         return Trigo.getPolarTarget(polarA, polarO)
 
     @staticmethod
+    def getCarthesianFromMessage(message):
+        carthesianA = Trigo.toCarthesian(
+            {'distance': float(message.getDistance()),
+             'angle': float(message.getAngle())})
+
+        carthesianO = {'x': float(message.getContent()[0]),
+                       'y': float(message.getContent()[1])}
+        return Trigo.getCarthesianTarget(carthesianA, carthesianO)
+
+    @staticmethod
     def getPolarAgentFromMessage(message):
         agent = Trigo.getPolarFromMessage(message)
         agent['heading'] = (float(message.getContent()[2]) + 360) % 360
         agent['type'] = str(message.getContent()[3])
+        agent['id'] = str(message.getContent()[4])
+        return agent
+
+    @staticmethod
+    def getCarthesianAgentFromMessage(message):
+        agent = Trigo.getCarthesianFromMessage(message)
+        agent['heading'] = (float(message.getContent()[2]) + 360) % 360
+        agent['type'] = str(message.getContent()[3])
+        agent['id'] = str(message.getContent()[4])
         return agent
 
     @staticmethod
@@ -68,37 +87,6 @@ class Trigo(object):
 
 # =============================================================================#
 # =============================================================================#
-#                                   Predict
-# =============================================================================#
-# =============================================================================#
-
-
-class Predict(object):
-
-    @staticmethod
-    def redefAngle(angleFromOrigin, polar):
-        polar['angle'] = (polar['angle'] + (360 - angleFromOrigin)) % 360
-        return polar
-
-    @staticmethod
-    def collision(targetPos, targetHeading, mySpeed):
-        targetHeading = Predict.redefAngle(
-            (targetPos['angle'] + 270) % 360, targetHeading)
-        targetVector = Trigo.toCarthesian(targetHeading)
-
-        valueY = sqrt(pow(mySpeed, 2) - pow(targetVector['x'], 2))
-        collisionTime = targetPos['distance'] / (valueY + targetVector['y'])
-
-        relativeAngle = (degrees(atan2(valueY, targetVector['x'])) + 360) % 360
-        relativeCollision = {'distance': mySpeed *
-                             collisionTime, 'angle': relativeAngle}
-
-        return Predict.redefAngle(-(targetPos['angle'] + 270) % 360,
-                                  relativeCollision)
-
-
-# =============================================================================#
-# =============================================================================#
 #                             Planned mouvements
 # =============================================================================#
 # =============================================================================#
@@ -121,82 +109,7 @@ def mouvement():
 
 
 def actionWarExplorer():
-    dico['percepts'] = []
-    dico['percepts_enemies'] = []
-    dico['percepts_alliesBase'] = []
-    dico['percepts_ressources'] = []
-
-    if 'mouvement' not in dico:
-        dico['mouvement'] = True
-
-    if 'heading' not in dico:
-        dico['heading'] = getHeading()
-
-    dico['messages'] = []
-    dico['messages_ressources'] = []
-
-    dico['percepts'] = getPercepts()
-    dico['percepts_enemies'] = getPerceptsEnemies()
-    dico['percepts_alliesBase'] = getPerceptsAlliesByType(WarAgentType.WarBase)
-    # percept ressources
-    for percept in dico['percepts']:
-        if percept.getType().equals(WarAgentType.WarFood):
-            dico['percepts_ressources'].append(percept)
-
-    for ressource in dico['percepts_ressources']:
-        broadcastMessageToAgentType(WarAgentType.WarBase, 'food', [
-                                    str(ressource.getDistance()),
-                                    str(ressource.getAngle())])
-
-    # percept enemies
-    for enemy in dico['percepts_enemies']:
-        broadcastMessageToAgentType(WarAgentType.WarBase, 'enemyFound', [
-                                    str(enemy.getDistance()),
-                                    str(enemy.getAngle()),
-                                    str(enemy.getHeading()),
-                                    str(enemy.getType())])
-
-    # messages
-    dico['messages'] = getMessages()
-
-    # message ressources
-    for message in dico['messages']:
-        if (message.getSenderType() == WarAgentType.WarBase and
-                message.getMessage() == 'food'):
-            food = Trigo.getPolarFromMessage(message)
-            confirmFoodExistance = True
-
-            if (food['distance'] < distanceOfView() and
-                    Trigo.inView(getHeading(), angleOfView(), food['angle'])):
-                inPerception = False
-
-                for ressource in dico['percepts_ressources']:
-                    if (Trigo.roundCoordinates(Trigo.toCarthesian(food)) ==
-                        Trigo.roundCoordinates(Trigo.toCarthesian(
-                            {'distance': ressource.getDistance(),
-                             'angle': ressource.getAngle()}))):
-                        inPerception = True
-                        break
-
-                if not inPerception:
-                    confirmFoodExistance = False
-                    broadcastMessageToAgentType(WarAgentType.WarBase, 'nofood',
-                                                [str(food['distance']),
-                                                 str(food['angle'])])
-
-            if confirmFoodExistance:
-                dico['messages_ressources'].append(food)
-
-    if isBlocked():
-        RandomHeading()
-        dico['heading'] = getHeading()
-        return move()
-    # FSM - Changement d'état
-    if actionWarExplorer.nextState is not None:
-        actionWarExplorer.currentState = actionWarExplorer.nextState
-        actionWarExplorer.nextState = None
-
-    return actionWarExplorer.currentState.execute()
+    return init()
 
 
 # =============================================================================#
@@ -273,8 +186,111 @@ class SearchState(object):
 
         return mouvement()
 
-
+# =============================================================================#
+# =============================================================================#
+#                               INIT SCRIPT
+# =============================================================================#
+# =============================================================================#
 # Initialisation des variables
 dico = {}
 actionWarExplorer.nextState = SearchState
 actionWarExplorer.currentState = None
+# erratic mouvements
+dico['mouvement'] = True
+
+
+def init():
+    # init mouvement
+    if 'mouvement' not in dico:
+        dico['mouvement'] = True
+
+    if 'heading' not in dico:
+        dico['heading'] = getHeading()
+
+    initPerception()
+    initInformation()
+    settingRessources()
+
+    if isBlocked():
+        RandomHeading()
+        dico['heading'] = getHeading()
+        return mouvement()
+    # FSM - Changement d'état
+    if actionWarExplorer.nextState is not None:
+        actionWarExplorer.currentState = actionWarExplorer.nextState
+        actionWarExplorer.nextState = None
+
+    return actionWarExplorer.currentState.execute()
+
+
+def initPerception():
+    dico['percepts'] = getPercepts()
+    dico['percepts_enemies'] = []
+    dico['percepts_allies_base'] = []
+    dico['percepts_ressources'] = []
+
+    # percept ressources
+    for percept in dico['percepts']:
+        if percept.getType().equals(WarAgentType.WarFood):
+            dico['percepts_ressources'].append(percept)
+        elif isEnemy(percept):
+            dico['percepts_enemies'].append(percept)
+        elif percept.getType().equals(WarAgentType.WarBase):
+            dico['percepts_allies_base'].append(percept)
+
+    for ressource in dico['percepts_ressources']:
+        ressourceCarthesian = Trigo.toCarthesian({
+            "distance": ressource.getDistance(),
+            'angle': ressource.getAngle()
+        })
+        broadcastMessageToAgentType(WarAgentType.WarBase, 'foodFound', [
+                                    str(ressourceCarthesian['x']),
+                                    str(ressource['y'])])
+
+    # percept enemies
+    for enemy in dico['percepts_enemies']:
+        enemyCarthesian = Trigo.toCarthesian({
+            'distance': enemy.getDistance(),
+            'angle': enemy.getAngle()
+        })
+        broadcastMessageToAgentType(WarAgentType.WarBase, 'enemyFound', [
+                                    str(enemyCarthesian['x']),
+                                    str(enemyCarthesian['y']),
+                                    str(enemy.getHeading()),
+                                    str(enemy.getType()),
+                                    str(enemy.getId())])
+
+
+def initInformation():
+    dico['messages'] = getMessages()
+    dico['messages_enemies'] = []
+    dico['messages_ressources'] = []
+
+    for message in dico['messages']:
+        if message.getMessage().equals('food'):
+            food = Trigo.getCarthesianFromMessage(message)
+            dico['messages_ressources'].append(food)
+
+
+def settingRessources():
+    for foodC from dico['messages_ressources']:
+        food = Trigo.toPolar(foodC)
+        if (food['distance'] < distanceOfView() and
+                Trigo.inView(getHeading(), angleOfView(), food['angle'])):
+            inPerception = True
+
+            for foodPercept in dico['percepts_ressources']:
+                if(foodC == Trigo.roundCoordinates(Trigo.toCarthesian({
+                    'distance': ressource.getDistance(),
+                        'angle': ressource.getAngle()}))):
+                    inPerception = True
+                    break
+
+            if not inPerception:
+                foodExist = False
+                broadcastMessageToAgentType(WarAgentType.WarBase, 'nofood',
+                                            [str(foodC['x']),
+                                             str(foodC['y'])])
+
+        if foodExist:
+            dico['ressources'].append(food)

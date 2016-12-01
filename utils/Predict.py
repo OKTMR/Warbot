@@ -22,7 +22,7 @@ class Predict(object):
 
         valueY = sqrt(pow(mySpeed, 2) - pow(targetVector['x'], 2))
         collisionTime = targetPos['distance'] / \
-            ((valueY * 2) + targetVector['y'])
+            (valueY + targetVector['y'])
 
         relativeAngle = (degrees(atan2(valueY, targetVector['x'])) + 360) % 360
         relativeCollision = {'distance': mySpeed *
