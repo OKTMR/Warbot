@@ -176,22 +176,13 @@ class FireState(object):
     @staticmethod
     def execute():
         setDebugString('Projectile lancé !!!')
-        enemySpeed = 0
-        enemy = dico['target']
-        if enemy['type'] != 'WarBase' and enemy['type'] != 'WarTurret':
-            enemySpeed = Stats.agent(enemy['type']).SPEED
-        collision = Predict.collision(
-            enemy,
-            {'distance': enemySpeed,
-             'angle': enemy['heading']},
-            Stats.projectile(dico['projectile']).SPEED)
-
-        setHeading(collision['angle'])
-        actionWarTurret.nextState = ReloadState
+        setHeading(dico['target']['angle'])
+        actionWarTurret.nextState = ObserveState
         return fire()
 
 
 def actionWarTurret():
+    broadcastMessageToAgentType(WarAgentType.WarEngineer, 'turret','')
     return init()
 
 # =============================================================================#
@@ -205,7 +196,7 @@ def init():
     initPerception()
     initInformation()
     settingRessources()
-    # TODO: IF can destroy targets :
+
     settingEnemies()
     settingTargets()
 
@@ -264,8 +255,8 @@ def initInformation():
         if message.getMessage() == 'food':
             food = Trigo.getCarthesianFromMessage(message)
             dico['messages_ressources'].append(food)
-        # TODO: If has an enemy management
-        if message.getMessage() == 'enemy':
+
+        elif message.getMessage() == 'enemy':
             enemy = Trigo.getCarthesianAgentFromMessage(message)
             dico['messages_enemies'].append(enemy)
 
@@ -324,9 +315,8 @@ from pprint import pprint
 
 def settingTargets():
     dico['targets'] = []
-    pprint(dico['enemies'])
     for enemy in dico['enemies']:
-        if(enemy['distance'] <= Stats.projectile('WarShell').RANGE * 2):
+        if(enemy['distance'] <= Stats.projectile(dico['projectile']).RANGE * 2):
             enemySpeed = 0
             if enemy['type'] != 'WarBase' and enemy['type'] != 'WarTurret':
                 enemySpeed = Stats.agent(enemy['type']).SPEED
@@ -337,11 +327,10 @@ def settingTargets():
                 Stats.projectile(dico['projectile']).SPEED)
 
             if(collision['distance'] <=
-               Stats.projectile('WarShell').RANGE):
+               Stats.projectile(dico['projectile']).RANGE):
                 dico['targets'].append(collision)
 
 
-# Initialisation des variables
 # Initialisation des variables
 dico = {}
 actionWarTurret.nextState = ObserveState

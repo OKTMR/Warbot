@@ -172,7 +172,7 @@ def actionWarBase():
             return createEngineer()
         else:
             return idle()
-    elif random() > 0.7:
+    elif random() > 0.9:
         setNextAgentToCreate(WarAgentType.WarKamikaze)
         return create()
     return idle()

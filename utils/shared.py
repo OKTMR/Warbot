@@ -6,6 +6,7 @@
 
 
 def init():
+    # TODO: IF CAN MOVE
     # init mouvement
     if 'mouvement' not in dico:
         dico['mouvement'] = True
@@ -79,18 +80,21 @@ def initInformation():
     dico['messages_ressources'] = []
 
     for message in dico['messages']:
-        if message.getMessage().equals("food"):
+        if message.getMessage() == 'food':
             food = Trigo.getCarthesianFromMessage(message)
             dico['messages_ressources'].append(food)
         # TODO: If has an enemy management
         print('IF CAN FIRE shared')
-        # if message.getMessage().equals("enemy"):
+        # elif message.getMessage() == 'enemy':
         #   enemy = Trigo.getCarthesianAgentFromMessage(message)
         #   dico['messages_enemies'].append(enemy)
 
 
 def settingRessources():
+    dico['ressources'] = []
+
     for foodC in dico['messages_ressources']:
+        foodExist = True
         food = Trigo.toPolar(foodC)
         if (food['distance'] < distanceOfView() and
                 Trigo.inView(getHeading(), angleOfView(), food['angle'])):
@@ -98,8 +102,8 @@ def settingRessources():
 
             for foodPercept in dico['percepts_ressources']:
                 if(foodC == Trigo.roundCoordinates(Trigo.toCarthesian({
-                    'distance': ressource.getDistance(),
-                        'angle': ressource.getAngle()}))):
+                    'distance': foodPercept.getDistance(),
+                        'angle': foodPercept.getAngle()}))):
                     inPerception = True
                     break
 
@@ -117,7 +121,11 @@ def settingEnemies():
     dico['enemies'] = []
 
     for enemyMessage in dico['messages_enemies']:
-        dico['enemies'].append(Trigo.toPolar(enemyMessage))
+        enemyPolar = Trigo.toPolar(enemyMessage)
+        enemyPolar['heading'] = enemyMessage['heading']
+        enemyPolar['type'] = enemyMessage['type']
+        enemyPolar['id'] = enemyMessage['id']
+        dico['enemies'].append(enemyPolar)
 
     for enemyPercept in dico['percepts_enemies']:
         canBeAdded = True
@@ -138,16 +146,16 @@ def settingEnemies():
 def settingTargets():
     dico['targets'] = []
     for enemy in dico['enemies']:
-        if(enemy['distance'] <= Stats.projectile('WarShell').RANGE * 2):
+        if(enemy['distance'] <= Stats.projectile(dico['projectile']).RANGE * 2):
             enemySpeed = 0
-            if hasattr(str(Stats.agent(enemy['type'])), 'SPEED'):
+            if enemy['type'] != 'WarBase' and enemy['type'] != 'WarTurret':
                 enemySpeed = Stats.agent(enemy['type']).SPEED
             collision = Predict.collision(
                 enemy,
-                {'distance': Stats.agent(enemy['type']).SPEED,
+                {'distance': enemySpeed,
                  'angle': enemy['heading']},
-                Stats.projectile('WarShell').SPEED)
+                Stats.projectile(dico['projectile']).SPEED)
 
             if(collision['distance'] <=
-               Stats.projectile('WarShell').RANGE):
+               Stats.projectile(dico['projectile']).RANGE):
                 dico['targets'].append(collision)

@@ -150,8 +150,8 @@ class GoHomeState(object):
     @staticmethod
     def execute():
         setDebugString('gohome')
-        if len(dico['percepts_alliesBase']) != 0:
-            base = dico['percepts_alliesBase'][0]
+        if len(dico['percepts_allies_base']) != 0:
+            base = dico['percepts_allies_base'][0]
             if isPossibleToGiveFood(base):
                 if getNbElementsInBag() <= 1:
                     actionWarExplorer.nextState = SearchState
@@ -176,21 +176,16 @@ class SearchState(object):
             actionWarExplorer.currentState = HarvestState
             return HarvestState.execute()
 
-        if len(dico['messages_ressources']) != 0:
-            minDistance = dico['messages_ressources'][0]['distance']
-            minAngle = dico['messages_ressources'][0]['angle']
-            for food in dico['messages_ressources']:
+        if len(dico['ressources']) != 0:
+            minDistance = dico['ressources'][0]['distance']
+            minAngle = dico['ressources'][0]['angle']
+            for food in dico['ressources']:
                 if food['distance'] < minDistance:
                     minAngle = food['angle']
             dico['heading'] = minAngle
 
         return mouvement()
 
-# =============================================================================#
-# =============================================================================#
-#                               INIT SCRIPT
-# =============================================================================#
-# =============================================================================#
 # Initialisation des variables
 dico = {}
 actionWarExplorer.nextState = SearchState
@@ -199,23 +194,34 @@ actionWarExplorer.currentState = None
 dico['mouvement'] = True
 
 
-def init():
-    # init mouvement
-    if 'mouvement' not in dico:
-        dico['mouvement'] = True
+# =============================================================================#
+# =============================================================================#
+#                               INIT SCRIPT
+# =============================================================================#
+# =============================================================================#
 
+
+def init():
+    # TODO: IF CAN MOVE
+    # init mouvement
     if 'heading' not in dico:
         dico['heading'] = getHeading()
 
     initPerception()
     initInformation()
     settingRessources()
+    # TODO: IF can destroy targets :
+    # print('DEFINE ENEMIES DETECTION IF CAN FIRE')
+    # settingEnemies()
+    # settingTargets()
 
     if isBlocked():
         RandomHeading()
         dico['heading'] = getHeading()
         return mouvement()
     # FSM - Changement d'état
+    # TODO: actionWar to define
+    # print('actionWar NOT CHANGED IN shared')
     if actionWarExplorer.nextState is not None:
         actionWarExplorer.currentState = actionWarExplorer.nextState
         actionWarExplorer.nextState = None
@@ -245,7 +251,7 @@ def initPerception():
         })
         broadcastMessageToAgentType(WarAgentType.WarBase, 'foodFound', [
                                     str(ressourceCarthesian['x']),
-                                    str(ressource['y'])])
+                                    str(ressourceCarthesian['y'])])
 
     # percept enemies
     for enemy in dico['percepts_enemies']:
@@ -270,19 +276,26 @@ def initInformation():
         if message.getMessage() == 'food':
             food = Trigo.getCarthesianFromMessage(message)
             dico['messages_ressources'].append(food)
+        # TODO: If has an enemy management
+        # print('IF CAN FIRE shared')
+        # elif message.getMessage() == 'enemy':
+        #   enemy = Trigo.getCarthesianAgentFromMessage(message)
+        #   dico['messages_enemies'].append(enemy)
 
 
 def settingRessources():
+    dico['ressources'] = []
     for foodC in dico['messages_ressources']:
         food = Trigo.toPolar(foodC)
+        foodExist = True
         if (food['distance'] < distanceOfView() and
                 Trigo.inView(getHeading(), angleOfView(), food['angle'])):
-            inPerception = True
+            inPerception = False
 
             for foodPercept in dico['percepts_ressources']:
                 if(foodC == Trigo.roundCoordinates(Trigo.toCarthesian({
-                    'distance': ressource.getDistance(),
-                        'angle': ressource.getAngle()}))):
+                    'distance': foodPercept.getDistance(),
+                        'angle': foodPercept.getAngle()}))):
                     inPerception = True
                     break
 
