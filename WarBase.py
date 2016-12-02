@@ -202,6 +202,7 @@ def recievingMessages():
         elif message.getMessage() == 'enemyFound':
             enemy = Trigo.getCarthesianAgentFromMessage(message)
             stored = False
+
             for storedEnemy in dico['messages_enemies']:
                 if enemy['id'] == storedEnemy['id']:
                     stored = True

@@ -17,6 +17,7 @@ def init():
     initInformation()
     settingRessources()
     # TODO: IF can destroy targets :
+    print('DEFINE ENEMIES DETECTION IF CAN FIRE')
     # settingEnemies()
     # settingTargets()
 
@@ -25,11 +26,13 @@ def init():
         dico['heading'] = getHeading()
         return mouvement()
     # FSM - Changement d'état
-    if actionWarExplorer.nextState is not None:
-        actionWarExplorer.currentState = actionWarExplorer.nextState
-        actionWarExplorer.nextState = None
+    # TODO: actionWar to define
+    print('actionWar NOT CHANGED IN shared')
+    if actionWar.nextState is not None:
+        actionWar.currentState = actionWar.nextState
+        actionWar.nextState = None
 
-    return actionWarExplorer.currentState.execute()
+    return actionWar.currentState.execute()
 
 
 def initPerception():
@@ -67,7 +70,7 @@ def initPerception():
                                     str(enemyCarthesian['y']),
                                     str(enemy.getHeading()),
                                     str(enemy.getType()),
-                                    str(enemy.getId())])
+                                    str(enemy.getID())])
 
 
 def initInformation():
@@ -76,17 +79,18 @@ def initInformation():
     dico['messages_ressources'] = []
 
     for message in dico['messages']:
-        if message.getMessage().equals('food'):
+        if message.getMessage().equals("food"):
             food = Trigo.getCarthesianFromMessage(message)
             dico['messages_ressources'].append(food)
         # TODO: If has an enemy management
-        # if message.getMessage().equals('enemy'):
+        print('IF CAN FIRE shared')
+        # if message.getMessage().equals("enemy"):
         #   enemy = Trigo.getCarthesianAgentFromMessage(message)
         #   dico['messages_enemies'].append(enemy)
 
 
 def settingRessources():
-    for foodC from dico['messages_ressources']:
+    for foodC in dico['messages_ressources']:
         food = Trigo.toPolar(foodC)
         if (food['distance'] < distanceOfView() and
                 Trigo.inView(getHeading(), angleOfView(), food['angle'])):
@@ -118,17 +122,16 @@ def settingEnemies():
     for enemyPercept in dico['percepts_enemies']:
         canBeAdded = True
         for enemyMessage in dico['enemies']:
-            if enemyPercept.getId() == enemyMessage['id']:
+            if enemyPercept.getID() == enemyMessage['id']:
                 canBeAdded = False
                 break
 
         if canBeAdded:
-            enemyPerceptC = Trigo.toCarthesian(
-                {'distance': enemyPercept.getDistance(),
-                 'angle': enemyPercept.getAngle(),
-                 'heading': enemyPercept.getHeading(),
-                 'type': enemyPercept.getType(),
-                 'id': enemyPercept.getId()})
+            enemyPerceptC = {'distance': enemyPercept.getDistance(),
+                             'angle': enemyPercept.getAngle(),
+                             'heading': enemyPercept.getHeading(),
+                             'type': enemyPercept.getType(),
+                             'id': enemyPercept.getID()}
             dico['enemies'].append(enemyPerceptC)
 
 
@@ -136,6 +139,9 @@ def settingTargets():
     dico['targets'] = []
     for enemy in dico['enemies']:
         if(enemy['distance'] <= Stats.projectile('WarShell').RANGE * 2):
+            enemySpeed = 0
+            if hasattr(str(Stats.agent(enemy['type'])), 'SPEED'):
+                enemySpeed = Stats.agent(enemy['type']).SPEED
             collision = Predict.collision(
                 enemy,
                 {'distance': Stats.agent(enemy['type']).SPEED,

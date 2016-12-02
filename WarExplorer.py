@@ -258,7 +258,7 @@ def initPerception():
                                     str(enemyCarthesian['y']),
                                     str(enemy.getHeading()),
                                     str(enemy.getType()),
-                                    str(enemy.getId())])
+                                    str(enemy.getID())])
 
 
 def initInformation():
@@ -267,13 +267,13 @@ def initInformation():
     dico['messages_ressources'] = []
 
     for message in dico['messages']:
-        if message.getMessage().equals('food'):
+        if message.getMessage() == 'food':
             food = Trigo.getCarthesianFromMessage(message)
             dico['messages_ressources'].append(food)
 
 
 def settingRessources():
-    for foodC from dico['messages_ressources']:
+    for foodC in dico['messages_ressources']:
         food = Trigo.toPolar(foodC)
         if (food['distance'] < distanceOfView() and
                 Trigo.inView(getHeading(), angleOfView(), food['angle'])):

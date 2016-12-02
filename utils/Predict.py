@@ -15,7 +15,7 @@ class Predict(object):
     @staticmethod
     def collision(targetPos, targetHeading, mySpeed):
         # pas encore sur si vraiment utile ....
-        # targetPos = Trigo.getPolarTarget(targetPos, targetHeading)
+        targetPos = Trigo.getPolarTarget(targetPos, targetHeading)
         targetHeading = Predict.redefAngle(
             (targetPos['angle'] + 270) % 360, targetHeading)
         targetVector = Trigo.toCarthesian(targetHeading)

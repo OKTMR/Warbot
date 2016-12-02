@@ -20,6 +20,7 @@ class Stats(object):
     def projectile(projectile):
         return getattr(p, str(projectile))
 
+
 # =============================================================================#
 # =============================================================================#
 #                                   Trigo
@@ -52,10 +53,29 @@ class Trigo(object):
         return Trigo.getPolarTarget(polarA, polarO)
 
     @staticmethod
+    def getCarthesianFromMessage(message):
+        carthesianA = Trigo.toCarthesian(
+            {'distance': float(message.getDistance()),
+             'angle': float(message.getAngle())})
+
+        carthesianO = {'x': float(message.getContent()[0]),
+                       'y': float(message.getContent()[1])}
+        return Trigo.getCarthesianTarget(carthesianA, carthesianO)
+
+    @staticmethod
     def getPolarAgentFromMessage(message):
         agent = Trigo.getPolarFromMessage(message)
         agent['heading'] = (float(message.getContent()[2]) + 360) % 360
         agent['type'] = str(message.getContent()[3])
+        agent['id'] = str(message.getContent()[4])
+        return agent
+
+    @staticmethod
+    def getCarthesianAgentFromMessage(message):
+        agent = Trigo.getCarthesianFromMessage(message)
+        agent['heading'] = (float(message.getContent()[2]) + 360) % 360
+        agent['type'] = str(message.getContent()[3])
+        agent['id'] = str(message.getContent()[4])
         return agent
 
     @staticmethod
@@ -103,6 +123,7 @@ class Predict(object):
 
     @staticmethod
     def collision(targetPos, targetHeading, mySpeed):
+        # pas encore sur si vraiment utile ....
         targetPos = Trigo.getPolarTarget(targetPos, targetHeading)
         targetHeading = Predict.redefAngle(
             (targetPos['angle'] + 270) % 360, targetHeading)
@@ -113,8 +134,8 @@ class Predict(object):
             (valueY + targetVector['y'])
 
         relativeAngle = (degrees(atan2(valueY, targetVector['x'])) + 360) % 360
-        relativeCollision = {'distance': mySpeed * collisionTime,
-                             'angle': relativeAngle}
+        relativeCollision = {'distance': mySpeed *
+                             collisionTime, 'angle': relativeAngle}
 
         return Predict.redefAngle(-(targetPos['angle'] + 270) % 360,
                                   relativeCollision)
@@ -130,7 +151,6 @@ class ObserveState(object):
 
     @staticmethod
     def execute():
-
         if isReloaded():
             if len(dico['targets']) > 0:
                 setDebugString('Fire !!!')
@@ -141,44 +161,14 @@ class ObserveState(object):
                         dico['target'] = potentTarget
 
                 return FireState.execute()
-            elif len(dico['messages_enemies']) > 0:
-                nearestCollision = None
-                setDebugString('Fire !!!')
-
-                for potentTarget in dico['messages_enemies']:
-                    collision = Predict.collision(
-                        potentTarget,
-                        {'distance': Stats.agent(potentTarget['type']).SPEED,
-                         'angle': potentTarget['heading']},
-                        Stats.projectile('WarShell').SPEED)
-
-                    if(nearestCollision is None or
-                       nearestCollision > collision['distance']):
-                        nearestCollision = collision['distance']
-                        dico['target'] = potentTarget
-
-                if(nearestCollision <
-                   Stats.projectile('WarShell').RANGE):
-                    return FireState.execute()
-
         setDebugString('Hold on to this position')
-        setHeading((getHeading() + 90) % 360)
+        setHeading((getHeading() + 179) % 360)
 
         if not isReloaded():
-            return ReloadState.execute()
+            setDebugString('Je recharge')
+            return reloadWeapon()
         else:
             return idle()
-
-
-class ReloadState(object):
-
-    @staticmethod
-    def execute():
-        setDebugString('Je recharge')
-        if isReloaded():
-            actionWarTurret.nextState = ObserveState
-
-        return reloadWeapon()
 
 
 class FireState(object):
@@ -186,11 +176,15 @@ class FireState(object):
     @staticmethod
     def execute():
         setDebugString('Projectile lancé !!!')
+        enemySpeed = 0
+        enemy = dico['target']
+        if enemy['type'] != 'WarBase' and enemy['type'] != 'WarTurret':
+            enemySpeed = Stats.agent(enemy['type']).SPEED
         collision = Predict.collision(
-            dico['target'],
-            {'distance': Stats.agent(dico['target']['type']).SPEED,
-             'angle': dico['target']['heading']},
-            Stats.projectile('WarShell').SPEED)
+            enemy,
+            {'distance': enemySpeed,
+             'angle': enemy['heading']},
+            Stats.projectile(dico['projectile']).SPEED)
 
         setHeading(collision['angle'])
         actionWarTurret.nextState = ReloadState
@@ -198,60 +192,159 @@ class FireState(object):
 
 
 def actionWarTurret():
-    dico['percepts'] = []
+    return init()
+
+# =============================================================================#
+# =============================================================================#
+#                               INIT SCRIPT
+# =============================================================================#
+# =============================================================================#
+
+
+def init():
+    initPerception()
+    initInformation()
+    settingRessources()
+    # TODO: IF can destroy targets :
+    settingEnemies()
+    settingTargets()
+
+    # FSM - Changement d'état
+    if actionWarTurret.nextState is not None:
+        actionWarTurret.currentState = actionWarTurret.nextState
+        actionWarTurret.nextState = None
+
+    return actionWarTurret.currentState.execute()
+
+
+def initPerception():
+    dico['percepts'] = getPercepts()
     dico['percepts_enemies'] = []
-    dico['percepts_alliesBase'] = []
+    dico['percepts_allies_base'] = []
     dico['percepts_ressources'] = []
 
-    dico['targets'] = []
-
-    dico['percepts'] = getPercepts()
-    dico['percepts_enemies'] = getPerceptsEnemies()
-    dico['percepts_alliesBase'] = getPerceptsAlliesByType(WarAgentType.WarBase)
-
-    dico['messages_enemies'] = []
     # percept ressources
     for percept in dico['percepts']:
         if percept.getType().equals(WarAgentType.WarFood):
             dico['percepts_ressources'].append(percept)
+        elif isEnemy(percept):
+            dico['percepts_enemies'].append(percept)
+        elif percept.getType().equals(WarAgentType.WarBase):
+            dico['percepts_allies_base'].append(percept)
 
     for ressource in dico['percepts_ressources']:
-        broadcastMessageToAgentType(WarAgentType.WarBase, 'food', [
-                                    str(ressource.getDistance()),
-                                    str(ressource.getAngle())])
+        ressourceCarthesian = Trigo.toCarthesian({
+            "distance": ressource.getDistance(),
+            'angle': ressource.getAngle()
+        })
+        broadcastMessageToAgentType(WarAgentType.WarBase, 'foodFound', [
+                                    str(ressourceCarthesian['x']),
+                                    str(ressource['y'])])
 
     # percept enemies
     for enemy in dico['percepts_enemies']:
+        enemyCarthesian = Trigo.toCarthesian({
+            'distance': enemy.getDistance(),
+            'angle': enemy.getAngle()
+        })
         broadcastMessageToAgentType(WarAgentType.WarBase, 'enemyFound', [
-                                    str(enemy.getDistance()),
-                                    str(enemy.getAngle()),
+                                    str(enemyCarthesian['x']),
+                                    str(enemyCarthesian['y']),
                                     str(enemy.getHeading()),
-                                    str(enemy.getType())])
+                                    str(enemy.getType()),
+                                    str(enemy.getID())])
 
+
+def initInformation():
     dico['messages'] = getMessages()
-
-    for percept_target in dico['percepts_enemies']:
-        dico['targets'].append(
-            {'distance': percept_target.getDistance(),
-             'angle': percept_target.getAngle(),
-             'heading': percept_target.getHeading(),
-             'type': percept_target.getType()}
-        )
+    dico['messages_enemies'] = []
+    dico['messages_ressources'] = []
 
     for message in dico['messages']:
-        if (message.getSenderType() == WarAgentType.WarBase and
-                message.getMessage() == 'enemy'):
-            enemy = Trigo.getPolarAgentFromMessage(message)
+        if message.getMessage() == 'food':
+            food = Trigo.getCarthesianFromMessage(message)
+            dico['messages_ressources'].append(food)
+        # TODO: If has an enemy management
+        if message.getMessage() == 'enemy':
+            enemy = Trigo.getCarthesianAgentFromMessage(message)
+            dico['messages_enemies'].append(enemy)
 
-            if(enemy['distance'] <= Stats.projectile('WarShell').RANGE * 2):
-                dico['messages_enemies'].append(enemy)
 
-    if actionWarTurret.nextState is not None:
-        actionWarTurret.currentState = actionWarTurret.nextState
-        actionWarTurret.nextState = None
-    return actionWarTurret.currentState.execute()
+def settingRessources():
+    for foodC in dico['messages_ressources']:
+        food = Trigo.toPolar(foodC)
+        if (food['distance'] < distanceOfView() and
+                Trigo.inView(getHeading(), angleOfView(), food['angle'])):
+            inPerception = True
 
+            for foodPercept in dico['percepts_ressources']:
+                if(foodC == Trigo.roundCoordinates(Trigo.toCarthesian({
+                    'distance': ressource.getDistance(),
+                        'angle': ressource.getAngle()}))):
+                    inPerception = True
+                    break
+
+            if not inPerception:
+                foodExist = False
+                broadcastMessageToAgentType(WarAgentType.WarBase, 'nofood',
+                                            [str(foodC['x']),
+                                             str(foodC['y'])])
+
+        if foodExist:
+            dico['ressources'].append(food)
+
+
+def settingEnemies():
+    dico['enemies'] = []
+
+    for enemyMessage in dico['messages_enemies']:
+        enemyPolar = Trigo.toPolar(enemyMessage)
+        enemyPolar['heading'] = enemyMessage['heading']
+        enemyPolar['type'] = enemyMessage['type']
+        enemyPolar['id'] = enemyMessage['id']
+        dico['enemies'].append(enemyPolar)
+
+    for enemyPercept in dico['percepts_enemies']:
+        canBeAdded = True
+        for enemyMessage in dico['enemies']:
+            if enemyPercept.getID() == enemyMessage['id']:
+                canBeAdded = False
+                break
+
+        if canBeAdded:
+            enemyPerceptC = {'distance': enemyPercept.getDistance(),
+                             'angle': enemyPercept.getAngle(),
+                             'heading': enemyPercept.getHeading(),
+                             'type': enemyPercept.getType(),
+                             'id': enemyPercept.getID()}
+            dico['enemies'].append(enemyPerceptC)
+
+from pprint import pprint
+
+
+def settingTargets():
+    dico['targets'] = []
+    pprint(dico['enemies'])
+    for enemy in dico['enemies']:
+        if(enemy['distance'] <= Stats.projectile('WarShell').RANGE * 2):
+            enemySpeed = 0
+            if enemy['type'] != 'WarBase' and enemy['type'] != 'WarTurret':
+                enemySpeed = Stats.agent(enemy['type']).SPEED
+            collision = Predict.collision(
+                enemy,
+                {'distance': enemySpeed,
+                 'angle': enemy['heading']},
+                Stats.projectile(dico['projectile']).SPEED)
+
+            if(collision['distance'] <=
+               Stats.projectile('WarShell').RANGE):
+                dico['targets'].append(collision)
+
+
+# Initialisation des variables
 # Initialisation des variables
 dico = {}
 actionWarTurret.nextState = ObserveState
 actionWarTurret.currentState = None
+# if can fire
+dico['projectile'] = 'WarShell'

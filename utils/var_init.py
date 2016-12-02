@@ -1,8 +1,12 @@
 # Initialisation des variables
 dico = {}
-actionWarExplorer.nextState = SearchState
-actionWarExplorer.currentState = None
+# TODO: actionWar*
+print('actionWar in VAR INIT')
+actionWar.nextState = SearchState
+actionWar.currentState = None
 # erratic mouvements
+print('DEFINE IF CAN MOVE')
 dico['mouvement'] = True
 # if can fire
+print('DEFINE IF CAN FIRE')
 # dico['projectile'] = 'WarShell'
