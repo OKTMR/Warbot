@@ -1,7 +1,5 @@
 # =============================================================================#
-# =============================================================================#
 #                                   Predict
-# =============================================================================#
 # =============================================================================#
 
 
@@ -15,18 +13,16 @@ class Predict(object):
     @staticmethod
     def collision(targetPos, targetHeading, mySpeed):
         # pas encore sur si vraiment utile ....
-        targetPos = Trigo.getPolarTarget(targetPos, targetHeading)
-        targetHeading = Predict.redefAngle(
-            (targetPos['angle'] + 270) % 360, targetHeading)
-        targetVector = Trigo.toCarthesian(targetHeading)
+        angleShift = (targetPos['angle'] + 270) % 360
+        targetToBe = Trigo.getPolarTarget(targetPos, targetHeading)
+        targetToBe = Predict.redefAngle(angleShift, targetToBe)
+        targetVector = Trigo.toCarthesian(targetToBe)
 
         valueY = sqrt(pow(mySpeed, 2) - pow(targetVector['x'], 2))
-        collisionTime = targetPos['distance'] / \
-            (valueY + targetVector['y'])
+        collisionTime = targetPos['distance'] / (valueY + targetVector['y'])
 
         relativeAngle = (degrees(atan2(valueY, targetVector['x'])) + 360) % 360
-        relativeCollision = {'distance': mySpeed *
-                             collisionTime, 'angle': relativeAngle}
+        relativeCollision = {'distance': mySpeed * collisionTime,
+                             'angle': relativeAngle}
 
-        return Predict.redefAngle(-(targetPos['angle'] + 270) % 360,
-                                  relativeCollision)
+        return Predict.redefAngle(-angleShift, relativeCollision)

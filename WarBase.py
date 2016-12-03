@@ -3,143 +3,6 @@ from random import random
 import edu.warbot.agents.agents as a
 import edu.warbot.agents.projectiles as p
 
-# =============================================================================#
-# =============================================================================#
-#                                   Stats
-# =============================================================================#
-# =============================================================================#
-
-
-class Stats(object):
-
-    @staticmethod
-    def agent(agent):
-        return getattr(a, str(agent))
-
-    @staticmethod
-    def projectile(projectile):
-        return getattr(p, str(projectile))
-
-
-# =============================================================================#
-# =============================================================================#
-#                                   Trigo
-# =============================================================================#
-# =============================================================================#
-
-
-class Trigo(object):
-
-    @staticmethod
-    def getCarthesianTarget(carthesianSender, carthesianObjective):
-        return {'x': carthesianSender['x'] + carthesianObjective['x'],
-                'y': carthesianSender['y'] + carthesianObjective['y']}
-
-    @staticmethod
-    def getPolarTarget(polarSender, polarObjective):
-        carthesianTarget = Trigo.getCarthesianTarget(
-            Trigo.toCarthesian(polarSender),
-            Trigo.toCarthesian(polarObjective))
-
-        return Trigo.toPolar(carthesianTarget)
-
-    @staticmethod
-    def getPolarFromMessage(message):
-        polarA = {'distance': float(message.getDistance()),
-                  'angle': float(message.getAngle())}
-
-        polarO = {'distance': float(message.getContent()[0]),
-                  'angle': float(message.getContent()[1])}
-        return Trigo.getPolarTarget(polarA, polarO)
-
-    @staticmethod
-    def getCarthesianFromMessage(message):
-        carthesianA = Trigo.toCarthesian(
-            {'distance': float(message.getDistance()),
-             'angle': float(message.getAngle())})
-
-        carthesianO = {'x': float(message.getContent()[0]),
-                       'y': float(message.getContent()[1])}
-        return Trigo.getCarthesianTarget(carthesianA, carthesianO)
-
-    @staticmethod
-    def getPolarAgentFromMessage(message):
-        agent = Trigo.getPolarFromMessage(message)
-        agent['heading'] = (float(message.getContent()[2]) + 360) % 360
-        agent['type'] = str(message.getContent()[3])
-        agent['id'] = str(message.getContent()[4])
-        return agent
-
-    @staticmethod
-    def getCarthesianAgentFromMessage(message):
-        agent = Trigo.getCarthesianFromMessage(message)
-        agent['heading'] = (float(message.getContent()[2]) + 360) % 360
-        agent['type'] = str(message.getContent()[3])
-        agent['id'] = str(message.getContent()[4])
-        return agent
-
-    @staticmethod
-    def toCarthesian(polar):
-        return {'x': polar['distance'] * cos(radians(polar['angle'])),
-                'y': polar['distance'] * sin(radians(polar['angle']))}
-
-    @staticmethod
-    def toPolar(carthesian):
-        return {'distance': hypot(carthesian['x'], carthesian['y']),
-                'angle': (degrees(atan2(carthesian['y'], carthesian['x'])) +
-                          360) % 360}
-
-    @staticmethod
-    def roundCoordinates(carthesian):
-        carthesian['x'] = Trigo.myfloor(carthesian['x'])
-        carthesian['y'] = Trigo.myfloor(carthesian['y'])
-        return carthesian
-
-    @staticmethod
-    def myfloor(x):
-        return int(5 * round(float(x) / 5))
-
-    @staticmethod
-    def diffAngle(firstAngle, secondAngle):
-        return abs((firstAngle - secondAngle + 180 + 360) % 360 - 180)
-
-    @staticmethod
-    def inView(viewAngle, angleOfView, targetAngle):
-        return Trigo.diffAngle(viewAngle, targetAngle) < (angleOfView / 2)
-
-# =============================================================================#
-# =============================================================================#
-#                                   Predict
-# =============================================================================#
-# =============================================================================#
-
-
-class Predict(object):
-
-    @staticmethod
-    def redefAngle(angleFromOrigin, polar):
-        polar['angle'] = (polar['angle'] + (360 - angleFromOrigin)) % 360
-        return polar
-
-    @staticmethod
-    def collision(targetPos, targetHeading, mySpeed):
-        # pas encore sur si vraiment utile ....
-        # targetPos = Trigo.getPolarTarget(targetPos, targetHeading)
-        targetHeading = Predict.redefAngle(
-            (targetPos['angle'] + 270) % 360, targetHeading)
-        targetVector = Trigo.toCarthesian(targetHeading)
-
-        valueY = sqrt(pow(mySpeed, 2) - pow(targetVector['x'], 2))
-        collisionTime = targetPos['distance'] / \
-            (valueY + targetVector['y'])
-
-        relativeAngle = (degrees(atan2(valueY, targetVector['x'])) + 360) % 360
-        relativeCollision = {'distance': mySpeed *
-                             collisionTime, 'angle': relativeAngle}
-
-        return Predict.redefAngle(-(targetPos['angle'] + 270) % 360,
-                                  relativeCollision)
-
 
 # =============================================================================#
 # =============================================================================#
@@ -172,13 +35,14 @@ def actionWarBase():
             return createEngineer()
         else:
             return idle()
-    elif random() > 0.9:
-        setNextAgentToCreate(WarAgentType.WarKamikaze)
+    elif random() > 0.5:
+        setNextAgentToCreate(WarAgentType.WarExplorer)
         return create()
     return idle()
 
 dico = {}
 dico['messages_ressources'] = []
+dico['fs'] = {}  # food zone
 
 
 def recievingMessages():
@@ -186,8 +50,11 @@ def recievingMessages():
             # FOOD
             # found
         if message.getMessage() == 'foodFound':
-            food = Trigo.roundCoordinates(
-                Trigo.getCarthesianFromMessage(message))
+            foodC = Trigo.getCarthesianFromMessage(message)
+
+            foodZone(foodC)
+
+            food = Trigo.roundCoordinates(foodC)
             if food not in dico['messages_ressources']:
                 dico['messages_ressources'].append(food)
 
@@ -215,7 +82,7 @@ def recievingMessages():
 def sendingMessages():
     # FOOD
     for food in dico['messages_ressources']:
-        broadcastMessageToAgentType(WarAgentType.WarExplorer, 'food', [
+        broadcastMessageToAll('food', [
             str(food['x']),
             str(food['y'])])
 
@@ -227,3 +94,101 @@ def sendingMessages():
             str(enemy['heading']),
             str(enemy['type']),
             str(enemy['id'])])
+
+
+def foodZone(foodC):
+    if "near" not in dico['fs']:
+        foodCdist = hypot(foodC['x'], foodC['y'])
+        dico['fs']['near'] = foodC
+        dico['fs']['far'] = foodC
+        dico['fs']['baseNear'] = foodCdist
+        dico['fs']['baseFar'] = foodCdist
+        dico['fs']['between'] = 0
+
+    betweenNear = hypot(foodC["x"] - dico['fs']['near']['x'],
+                        foodC['y'] - dico['fs']['near']['y'])
+    betweenFar = hypot(foodC["x"] - dico['fs']['far']['x'],
+                       foodC['y'] - dico['fs']['far']['y'])
+
+    if (betweenNear > dico['fs']['between'] or
+            betweenFar > dico['fs']['between']):
+        foodCdist = hypot(foodC['x'], foodC['y'])
+
+        if betweenNear > betweenFar:
+            dico['fs']['far'] = foodC
+            dico['fs']['baseFar'] = foodCdist
+            dico['fs']['between'] = betweenNear
+        else:
+            if dico['fs']['baseFar'] >= foodCdist:
+                dico['fs']['near'] = foodC
+                dico['fs']['baseNear'] = foodCdist
+            else:
+                dico['fs']['near'] = dico['fs']['far']
+                dico['fs']['baseNear'] = dico['fs']['baseFar']
+                dico['fs']['far'] = foodC
+                dico['fs']['basefar'] = foodCdist
+
+            dico['fs']['between'] = betweenFar
+        broadcastMessageToAll('foodFar', [
+            str(dico['fs']['far']['x']),
+            str(dico['fs']['far']['y'])])
+        broadcastMessageToAll('foodNear', [
+            str(dico['fs']['near']['x']),
+            str(dico['fs']['near']['y'])])
+
+# =============================================================================#
+# =============================================================================#
+#                                   Trigo
+# =============================================================================#
+# =============================================================================#
+
+
+class Trigo(object):
+
+    @staticmethod
+    def getCarthesianTarget(carthesianSender, carthesianObjective):
+        return {'x': carthesianSender['x'] + carthesianObjective['x'],
+                'y': carthesianSender['y'] + carthesianObjective['y']}
+
+    @staticmethod
+    def getCarthesianFromMessage(message):
+        carthesianA = Trigo.toCarthesian(
+            {'distance': float(message.getDistance()),
+             'angle': float(message.getAngle())})
+
+        carthesianO = {'x': float(message.getContent()[0]),
+                       'y': float(message.getContent()[1])}
+        return Trigo.getCarthesianTarget(carthesianA, carthesianO)
+
+    @staticmethod
+    def getCarthesianAgentFromMessage(message):
+        agent = Trigo.getCarthesianFromMessage(message)
+        agent['heading'] = (float(message.getContent()[2]) + 360) % 360
+        agent['type'] = str(message.getContent()[3])
+        agent['id'] = int(message.getContent()[4])
+        return agent
+
+    @staticmethod
+    def toCarthesian(polar):
+        return {'x': polar['distance'] * cos(radians(polar['angle'])),
+                'y': polar['distance'] * sin(radians(polar['angle']))}
+
+    @staticmethod
+    def toPolar(carthesian):
+        return {'distance': hypot(carthesian['x'], carthesian['y']),
+                'angle': (degrees(atan2(carthesian['y'], carthesian['x'])) +
+                          360) % 360}
+
+    @staticmethod
+    def roundCoordinates(carthesian):
+        carthesian['x'] = Trigo.myfloor(carthesian['x'])
+        carthesian['y'] = Trigo.myfloor(carthesian['y'])
+        return carthesian
+
+    @staticmethod
+    def myfloor(x):
+        return int(5 * round(float(x) / 5))
+
+    @staticmethod
+    def diffAngle(firstAngle, secondAngle):
+        return abs((firstAngle - secondAngle + 180 + 360) % 360 - 180)

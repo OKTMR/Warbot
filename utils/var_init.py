@@ -9,4 +9,4 @@ print('DEFINE IF CAN MOVE')
 dico['mouvement'] = True
 # if can fire
 print('DEFINE IF CAN FIRE')
-# dico['projectile'] = 'WarShell'
+# dico['projectile'] = Stats.projectile('WarShell')

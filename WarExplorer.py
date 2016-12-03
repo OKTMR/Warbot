@@ -1,122 +1,9 @@
 from math import *
-# =============================================================================#
-# =============================================================================#
-#                                   Trigo
-# =============================================================================#
-# =============================================================================#
 
-
-class Trigo(object):
-
-    @staticmethod
-    def getCarthesianTarget(carthesianSender, carthesianObjective):
-        return {'x': carthesianSender['x'] + carthesianObjective['x'],
-                'y': carthesianSender['y'] + carthesianObjective['y']}
-
-    @staticmethod
-    def getPolarTarget(polarSender, polarObjective):
-        carthesianTarget = Trigo.getCarthesianTarget(
-            Trigo.toCarthesian(polarSender),
-            Trigo.toCarthesian(polarObjective))
-
-        return Trigo.toPolar(carthesianTarget)
-
-    @staticmethod
-    def getPolarFromMessage(message):
-        polarA = {'distance': float(message.getDistance()),
-                  'angle': float(message.getAngle())}
-
-        polarO = {'distance': float(message.getContent()[0]),
-                  'angle': float(message.getContent()[1])}
-        return Trigo.getPolarTarget(polarA, polarO)
-
-    @staticmethod
-    def getCarthesianFromMessage(message):
-        carthesianA = Trigo.toCarthesian(
-            {'distance': float(message.getDistance()),
-             'angle': float(message.getAngle())})
-
-        carthesianO = {'x': float(message.getContent()[0]),
-                       'y': float(message.getContent()[1])}
-        return Trigo.getCarthesianTarget(carthesianA, carthesianO)
-
-    @staticmethod
-    def getPolarAgentFromMessage(message):
-        agent = Trigo.getPolarFromMessage(message)
-        agent['heading'] = (float(message.getContent()[2]) + 360) % 360
-        agent['type'] = str(message.getContent()[3])
-        agent['id'] = str(message.getContent()[4])
-        return agent
-
-    @staticmethod
-    def getCarthesianAgentFromMessage(message):
-        agent = Trigo.getCarthesianFromMessage(message)
-        agent['heading'] = (float(message.getContent()[2]) + 360) % 360
-        agent['type'] = str(message.getContent()[3])
-        agent['id'] = str(message.getContent()[4])
-        return agent
-
-    @staticmethod
-    def toCarthesian(polar):
-        return {'x': polar['distance'] * cos(radians(polar['angle'])),
-                'y': polar['distance'] * sin(radians(polar['angle']))}
-
-    @staticmethod
-    def toPolar(carthesian):
-        return {'distance': hypot(carthesian['x'], carthesian['y']),
-                'angle': (degrees(atan2(carthesian['y'], carthesian['x'])) +
-                          360) % 360}
-
-    @staticmethod
-    def roundCoordinates(carthesian):
-        carthesian['x'] = Trigo.myfloor(carthesian['x'])
-        carthesian['y'] = Trigo.myfloor(carthesian['y'])
-        return carthesian
-
-    @staticmethod
-    def myfloor(x):
-        return int(5 * round(float(x) / 5))
-
-    @staticmethod
-    def diffAngle(firstAngle, secondAngle):
-        return abs((firstAngle - secondAngle + 180 + 360) % 360 - 180)
-
-    @staticmethod
-    def inView(viewAngle, angleOfView, targetAngle):
-        return Trigo.diffAngle(viewAngle, targetAngle) < (angleOfView / 2)
-
-# =============================================================================#
-# =============================================================================#
-#                             Planned mouvements
-# =============================================================================#
-# =============================================================================#
-
-
-def mouvement():
-    if dico['mouvement']:
-        setHeading(dico['heading'] + 20)
-        dico['mouvement'] = False
-    else:
-        setHeading(dico['heading'] - 20)
-        dico['mouvement'] = True
-    return move()
-
-# =============================================================================#
-# =============================================================================#
-#                                  Beginning
-# =============================================================================#
-# =============================================================================#
-
-
-def actionWarExplorer():
-    return init()
-
-
-# =============================================================================#
 # =============================================================================#
 #                                States
 # =============================================================================#
-# =============================================================================#
+
 
 class HarvestState(object):
 
@@ -186,6 +73,15 @@ class SearchState(object):
 
         return mouvement()
 
+
+# =============================================================================#
+#                                  Beginning
+# =============================================================================#
+
+
+def actionWarExplorer():
+    return init()
+
 # Initialisation des variables
 dico = {}
 actionWarExplorer.nextState = SearchState
@@ -195,9 +91,7 @@ dico['mouvement'] = True
 
 
 # =============================================================================#
-# =============================================================================#
 #                               INIT SCRIPT
-# =============================================================================#
 # =============================================================================#
 
 
@@ -210,18 +104,11 @@ def init():
     initPerception()
     initInformation()
     settingRessources()
-    # TODO: IF can destroy targets :
-    # print('DEFINE ENEMIES DETECTION IF CAN FIRE')
-    # settingEnemies()
-    # settingTargets()
 
     if isBlocked():
         RandomHeading()
         dico['heading'] = getHeading()
         return mouvement()
-    # FSM - Changement d'état
-    # TODO: actionWar to define
-    # print('actionWar NOT CHANGED IN shared')
     if actionWarExplorer.nextState is not None:
         actionWarExplorer.currentState = actionWarExplorer.nextState
         actionWarExplorer.nextState = None
@@ -276,11 +163,6 @@ def initInformation():
         if message.getMessage() == 'food':
             food = Trigo.getCarthesianFromMessage(message)
             dico['messages_ressources'].append(food)
-        # TODO: If has an enemy management
-        # print('IF CAN FIRE shared')
-        # elif message.getMessage() == 'enemy':
-        #   enemy = Trigo.getCarthesianAgentFromMessage(message)
-        #   dico['messages_enemies'].append(enemy)
 
 
 def settingRessources():
@@ -307,3 +189,86 @@ def settingRessources():
 
         if foodExist:
             dico['ressources'].append(food)
+
+# =============================================================================#
+# =============================================================================#
+#                                   Trigo
+# =============================================================================#
+# =============================================================================#
+
+
+class Trigo(object):
+
+    @staticmethod
+    def getCarthesianTarget(carthesianSender, carthesianObjective):
+        return {'x': carthesianSender['x'] + carthesianObjective['x'],
+                'y': carthesianSender['y'] + carthesianObjective['y']}
+
+    @staticmethod
+    def getPolarTarget(polarSender, polarObjective):
+        carthesianTarget = Trigo.getCarthesianTarget(
+            Trigo.toCarthesian(polarSender),
+            Trigo.toCarthesian(polarObjective))
+
+        return Trigo.toPolar(carthesianTarget)
+
+    @staticmethod
+    def getCarthesianFromMessage(message):
+        carthesianA = Trigo.toCarthesian(
+            {'distance': float(message.getDistance()),
+             'angle': float(message.getAngle())})
+
+        carthesianO = {'x': float(message.getContent()[0]),
+                       'y': float(message.getContent()[1])}
+        return Trigo.getCarthesianTarget(carthesianA, carthesianO)
+
+    @staticmethod
+    def getCarthesianAgentFromMessage(message):
+        agent = Trigo.getCarthesianFromMessage(message)
+        agent['heading'] = (float(message.getContent()[2]) + 360) % 360
+        agent['type'] = str(message.getContent()[3])
+        agent['id'] = str(message.getContent()[4])
+        return agent
+
+    @staticmethod
+    def toCarthesian(polar):
+        return {'x': polar['distance'] * cos(radians(polar['angle'])),
+                'y': polar['distance'] * sin(radians(polar['angle']))}
+
+    @staticmethod
+    def toPolar(carthesian):
+        return {'distance': hypot(carthesian['x'], carthesian['y']),
+                'angle': (degrees(atan2(carthesian['y'], carthesian['x'])) +
+                          360) % 360}
+
+    @staticmethod
+    def roundCoordinates(carthesian):
+        carthesian['x'] = Trigo.myfloor(carthesian['x'])
+        carthesian['y'] = Trigo.myfloor(carthesian['y'])
+        return carthesian
+
+    @staticmethod
+    def myfloor(x):
+        return int(5 * round(float(x) / 5))
+
+    @staticmethod
+    def diffAngle(firstAngle, secondAngle):
+        return abs((firstAngle - secondAngle + 180 + 360) % 360 - 180)
+
+    @staticmethod
+    def inView(viewAngle, angleOfView, targetAngle):
+        return Trigo.diffAngle(viewAngle, targetAngle) < (angleOfView / 2)
+
+# =============================================================================#
+#                             Planned mouvements
+# =============================================================================#
+
+
+def mouvement():
+    if dico['mouvement']:
+        setHeading(dico['heading'] + 20)
+        dico['mouvement'] = False
+    else:
+        setHeading(dico['heading'] - 20)
+        dico['mouvement'] = True
+    return move()

@@ -120,35 +120,41 @@ def settingRessources():
 def settingEnemies():
     dico['enemies'] = []
 
-    for enemyMessage in dico['messages_enemies']:
-        enemyPolar = Trigo.toPolar(enemyMessage)
-        enemyPolar['heading'] = enemyMessage['heading']
-        enemyPolar['type'] = enemyMessage['type']
-        enemyPolar['id'] = enemyMessage['id']
-        dico['enemies'].append(enemyPolar)
-
     for enemyPercept in dico['percepts_enemies']:
+        dico['enemies'].append({'distance': enemyPercept.getDistance(),
+                                'angle': enemyPercept.getAngle(),
+                                'heading': enemyPercept.getHeading(),
+                                'type': enemyPercept.getType(),
+                                'id': enemyPercept.getID()})
+
+    for enemyMessage in dico['messages_enemies']:
         canBeAdded = True
-        for enemyMessage in dico['enemies']:
-            if enemyPercept.getID() == enemyMessage['id']:
+        for enemyPercept in dico['enemies']:
+            if enemyPercept['id'] == enemyMessage['id']:
                 canBeAdded = False
                 break
 
         if canBeAdded:
-            enemyPerceptC = {'distance': enemyPercept.getDistance(),
-                             'angle': enemyPercept.getAngle(),
-                             'heading': enemyPercept.getHeading(),
-                             'type': enemyPercept.getType(),
-                             'id': enemyPercept.getID()}
-            dico['enemies'].append(enemyPerceptC)
+            enemyPolar = Trigo.toPolar(enemyMessage)
+            enemyPolar['heading'] = enemyMessage['heading']
+            enemyPolar['type'] = enemyMessage['type']
+            enemyPolar['id'] = enemyMessage['id']
+            dico['enemies'].append(enemyPolar)
 
 
 def settingTargets():
     dico['targets'] = []
+
     for enemy in dico['enemies']:
-        if(enemy['distance'] <= Stats.projectile(dico['projectile']).RANGE * 2):
+        if(enemy['distance'] <=
+           Stats.projectile(dico['projectile']).RANGE * 2):
             enemySpeed = 0
-            if enemy['type'] != 'WarBase' and enemy['type'] != 'WarTurret':
+            if enemy['type'] in [WarAgentType.WarEngineer,
+                                 WarAgentType.WarExplorer,
+                                 WarAgentType.WarHeavy,
+                                 WarAgentType.WarKamikaze,
+                                 WarAgentType.WarLight,
+                                 WarAgentType.WarRocketLauncher]:
                 enemySpeed = Stats.agent(enemy['type']).SPEED
             collision = Predict.collision(
                 enemy,
