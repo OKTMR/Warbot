@@ -21,6 +21,9 @@ class MoveToFoodZoneState(object):
                     ressourceToGo = ressource
             if ressourceToGo is not None and minDistance < 10:
                 return CreateTurretState.execute()
+            else:
+                dico['heading'] = ressourceToGo['angle']
+                return mouvement()
 
         elif dico['tick'] == 15 and dico['turrets_min_dist'] > 60:
             return CreateTurretState.execute()
@@ -224,15 +227,6 @@ class Trigo(object):
         return Trigo.toPolar(carthesianTarget)
 
     @staticmethod
-    def getPolarFromMessage(message):
-        polarA = {'distance': float(message.getDistance()),
-                  'angle': float(message.getAngle())}
-
-        polarO = {'distance': float(message.getContent()[0]),
-                  'angle': float(message.getContent()[1])}
-        return Trigo.getPolarTarget(polarA, polarO)
-
-    @staticmethod
     def getCarthesianFromMessage(message):
         carthesianA = Trigo.toCarthesian(
             {'distance': float(message.getDistance()),
@@ -241,14 +235,6 @@ class Trigo(object):
         carthesianO = {'x': float(message.getContent()[0]),
                        'y': float(message.getContent()[1])}
         return Trigo.getCarthesianTarget(carthesianA, carthesianO)
-
-    @staticmethod
-    def getPolarAgentFromMessage(message):
-        agent = Trigo.getPolarFromMessage(message)
-        agent['heading'] = (float(message.getContent()[2]) + 360) % 360
-        agent['type'] = str(message.getContent()[3])
-        agent['id'] = str(message.getContent()[4])
-        return agent
 
     @staticmethod
     def getCarthesianAgentFromMessage(message):

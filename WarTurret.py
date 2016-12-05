@@ -168,7 +168,6 @@ def settingTargets():
                                  WarAgentType.WarLight,
                                  WarAgentType.WarRocketLauncher]:
                 enemySpeed = Stats.agent(enemy['type']).SPEED
-            print enemySpeed
             collision = Predict.collision(
                 enemy,
                 {'distance': enemySpeed,
@@ -261,13 +260,13 @@ class Predict(object):
     @staticmethod
     def collision(targetPos, targetHeading, mySpeed):
         # pas encore sur si vraiment utile ....
-        angleShift = (targetPos['angle'] + 270) % 360
         targetToBe = Trigo.getPolarTarget(targetPos, targetHeading)
-        targetToBe = Predict.redefAngle(angleShift, targetToBe)
-        targetVector = Trigo.toCarthesian(targetToBe)
+        angleShift = (targetToBe['angle'] + 270) % 360
+        targetHeading = Predict.redefAngle(angleShift, targetHeading)
+        targetVector = Trigo.toCarthesian(targetHeading)
 
         valueY = sqrt(pow(mySpeed, 2) - pow(targetVector['x'], 2))
-        collisionTime = targetPos['distance'] / (valueY + targetVector['y'])
+        collisionTime = targetToBe['distance'] / (valueY + targetVector['y'])
 
         relativeAngle = (degrees(atan2(valueY, targetVector['x'])) + 360) % 360
         relativeCollision = {'distance': mySpeed * collisionTime,

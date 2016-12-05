@@ -76,19 +76,20 @@ class Predict(object):
 
     @staticmethod
     def collision(targetPos, targetHeading, mySpeed):
-        targetHeading = Predict.redefAngle(
-            (targetPos['angle'] + 270) % 360, targetHeading)
+        # pas encore sur si vraiment utile ....
+        targetToBe = Trigo.getPolarTarget(targetPos, targetHeading)
+        angleShift = (targetToBe['angle'] + 270) % 360
+        targetHeading = Predict.redefAngle(angleShift, targetHeading)
         targetVector = Trigo.toCarthesian(targetHeading)
 
         valueY = sqrt(pow(mySpeed, 2) - pow(targetVector['x'], 2))
-        collisionTime = targetPos['distance'] / (valueY + targetVector['y'])
+        collisionTime = targetToBe['distance'] / (valueY + targetVector['y'])
 
         relativeAngle = (degrees(atan2(valueY, targetVector['x'])) + 360) % 360
-        relativeCollision = {'distance': mySpeed *
-                             collisionTime, 'angle': relativeAngle}
+        relativeCollision = {'distance': mySpeed * collisionTime,
+                             'angle': relativeAngle}
 
-        return Predict.redefAngle(-(targetPos['angle'] + 270) % 360,
-                                  relativeCollision)
+        return Predict.redefAngle(-angleShift, relativeCollision)
 
 
 # =============================================================================#
