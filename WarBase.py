@@ -15,7 +15,7 @@ def actionWarBase():
     """
 # I AM HERE
     broadcastMessageToAll('base', '')
-    setDebugString(str(getNbElementsInBag()))
+    setDebugString("No rage de nos ravages")
 
     dico['messages'] = getMessages()
     dico['messages_enemies'] = []
@@ -30,11 +30,11 @@ def actionWarBase():
         return eat()
 
     if getHealth() < 5000:
-        if getHealth() > 4000 and random() < 0.5:
+        if getHealth() > 4000 and random() < 0.05:
             return createEngineer()
         else:
             return idle()
-    elif random() > 0.5:
+    else:
         setNextAgentToCreate(WarAgentType.WarRocketLauncher)
         return create()
     return idle()
@@ -92,6 +92,7 @@ def sendingMessages():
             str(enemy['heading']),
             str(enemy['type']),
             str(enemy['id'])])
+
     for enemy in dico['messages_enemies_bases']:
         broadcastMessageToAll('enemyBase', [
             str(enemy['x']),

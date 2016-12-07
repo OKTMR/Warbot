@@ -1,5 +1,6 @@
 from math import *
 from oktamer.Trigo import Trigo
+from random import random
 
 # =============================================================================#
 #                                  States
@@ -23,7 +24,7 @@ class MoveToFoodZoneState(object):
             else:
                 dico['heading'] = ressourceToGo['angle']
                 return mouvement()
-        elif dico['tick'] == 15 and dico['turrets_min_dist'] > 80:
+        elif dico['tick'] == 15 and dico['turrets_min_dist'] > 60:
             return CreateTurretState.execute()
 
         return mouvement()
@@ -34,15 +35,23 @@ class CreateTurretState(object):
     @staticmethod
     def execute():
         setNextBuildingToBuild(WarAgentType.WarTurret)
-        actionWarEngineer.nextState = GoHomeState
+        actionWarEngineer.nextState = GoDieState
+
         return build()
+
+
+class GoDieState(object):
+
+    @staticmethod
+    def execute():
+        return "die"
 
 
 class GoHomeState(object):
 
     @staticmethod
     def execute():
-        setDebugString('gohome')
+        setDebugString('No rage de mon reparage')
         if len(dico['percepts_allies_base']) != 0:
             base = dico['percepts_allies_base'][0]
             if isPossibleToGiveFood(base):
@@ -78,7 +87,11 @@ def actionWarEngineer():
 
 # Initialisation des variables
 dico = {}
-actionWarEngineer.nextState = MoveToFoodZoneState
+if random() < 0.7:
+    actionWarEngineer.nextState = MoveToFoodZoneState
+else:
+    actionWarEngineer.nextState = GoHomeState
+
 actionWarEngineer.currentState = None
 # erratic mouvements
 dico['mouvement'] = True
@@ -158,12 +171,6 @@ def initInformation():
         if message.getMessage() == 'food':
             food = Trigo.getCarthesianFromMessage(message)
             dico['messages_ressources'].append(food)
-        if message.getMessage() == 'foodNear':
-            food = Trigo.getCarthesianFromMessage(message)
-            dico['foodNear'] = Trigo.toPolar(food)
-        if message.getMessage() == 'foodFar':
-            food = Trigo.getCarthesianFromMessage(message)
-            dico['foodFar'] = Trigo.toPolar(food)
 
 
 def settingRessources():
