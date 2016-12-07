@@ -58,7 +58,7 @@ def initPerception():
         })
         broadcastMessageToAgentType(WarAgentType.WarBase, 'foodFound', [
                                     str(ressourceCarthesian['x']),
-                                    str(ressource['y'])])
+                                    str(ressourceCarthesian['y'])])
 
     # percept enemies
     for enemy in dico['percepts_enemies']:
@@ -146,8 +146,7 @@ def settingTargets():
     dico['targets'] = []
 
     for enemy in dico['enemies']:
-        if(enemy['distance'] <=
-           Stats.projectile(dico['projectile']).RANGE * 2):
+        if(enemy['distance'] <= dico['projectile'].RANGE * 2):
             enemySpeed = 0
             if enemy['type'] in [WarAgentType.WarEngineer,
                                  WarAgentType.WarExplorer,
@@ -160,8 +159,7 @@ def settingTargets():
                 enemy,
                 {'distance': enemySpeed,
                  'angle': enemy['heading']},
-                Stats.projectile(dico['projectile']).SPEED)
+                dico['projectile'].SPEED)
 
-            if(collision['distance'] <=
-               Stats.projectile(dico['projectile']).RANGE):
+            if(collision['distance'] <= dico['projectile'].RANGE):
                 dico['targets'].append(collision)

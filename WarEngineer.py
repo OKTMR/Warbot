@@ -1,6 +1,5 @@
 from math import *
-import edu.warbot.agents.agents as a
-import edu.warbot.agents.projectiles as p
+from oktamer.Trigo import Trigo
 
 # =============================================================================#
 #                                  States
@@ -24,8 +23,7 @@ class MoveToFoodZoneState(object):
             else:
                 dico['heading'] = ressourceToGo['angle']
                 return mouvement()
-
-        elif dico['tick'] == 15 and dico['turrets_min_dist'] > 60:
+        elif dico['tick'] == 15 and dico['turrets_min_dist'] > 80:
             return CreateTurretState.execute()
 
         return mouvement()
@@ -161,6 +159,12 @@ def initInformation():
         if message.getMessage() == 'food':
             food = Trigo.getCarthesianFromMessage(message)
             dico['messages_ressources'].append(food)
+        if message.getMessage() == 'foodNear':
+            food = Trigo.getCarthesianFromMessage(message)
+            dico['foodNear'] = Trigo.toPolar(food)
+        if message.getMessage() == 'foodFar':
+            food = Trigo.getCarthesianFromMessage(message)
+            dico['foodFar'] = Trigo.toPolar(food)
 
 
 def settingRessources():
@@ -203,88 +207,3 @@ def mouvement():
         setHeading(dico['heading'] - 20)
         dico['mouvement'] = True
     return move()
-
-# =============================================================================#
-# =============================================================================#
-#                                   Trigo
-# =============================================================================#
-# =============================================================================#
-
-
-class Trigo(object):
-
-    @staticmethod
-    def getCarthesianTarget(carthesianSender, carthesianObjective):
-        return {'x': carthesianSender['x'] + carthesianObjective['x'],
-                'y': carthesianSender['y'] + carthesianObjective['y']}
-
-    @staticmethod
-    def getPolarTarget(polarSender, polarObjective):
-        carthesianTarget = Trigo.getCarthesianTarget(
-            Trigo.toCarthesian(polarSender),
-            Trigo.toCarthesian(polarObjective))
-
-        return Trigo.toPolar(carthesianTarget)
-
-    @staticmethod
-    def getCarthesianFromMessage(message):
-        carthesianA = Trigo.toCarthesian(
-            {'distance': float(message.getDistance()),
-             'angle': float(message.getAngle())})
-
-        carthesianO = {'x': float(message.getContent()[0]),
-                       'y': float(message.getContent()[1])}
-        return Trigo.getCarthesianTarget(carthesianA, carthesianO)
-
-    @staticmethod
-    def getCarthesianAgentFromMessage(message):
-        agent = Trigo.getCarthesianFromMessage(message)
-        agent['heading'] = (float(message.getContent()[2]) + 360) % 360
-        agent['type'] = str(message.getContent()[3])
-        agent['id'] = str(message.getContent()[4])
-        return agent
-
-    @staticmethod
-    def toCarthesian(polar):
-        return {'x': polar['distance'] * cos(radians(polar['angle'])),
-                'y': polar['distance'] * sin(radians(polar['angle']))}
-
-    @staticmethod
-    def toPolar(carthesian):
-        return {'distance': hypot(carthesian['x'], carthesian['y']),
-                'angle': (degrees(atan2(carthesian['y'], carthesian['x'])) +
-                          360) % 360}
-
-    @staticmethod
-    def roundCoordinates(carthesian):
-        carthesian['x'] = Trigo.myfloor(carthesian['x'])
-        carthesian['y'] = Trigo.myfloor(carthesian['y'])
-        return carthesian
-
-    @staticmethod
-    def myfloor(x):
-        return int(5 * round(float(x) / 5))
-
-    @staticmethod
-    def diffAngle(firstAngle, secondAngle):
-        return abs((firstAngle - secondAngle + 180 + 360) % 360 - 180)
-
-    @staticmethod
-    def inView(viewAngle, angleOfView, targetAngle):
-        return Trigo.diffAngle(viewAngle, targetAngle) < (angleOfView / 2)
-
-
-# =============================================================================#
-#                                   Stats
-# =============================================================================#
-
-
-class Stats(object):
-
-    @staticmethod
-    def agent(agent):
-        return getattr(a, str(agent))
-
-    @staticmethod
-    def projectile(projectile):
-        return getattr(p, str(projectile))

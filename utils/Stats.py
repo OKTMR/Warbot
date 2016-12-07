@@ -1,6 +1,5 @@
-# TODO: DO IT
-# import edu.warbot.agents.agents as a
-# import edu.warbot.agents.projectiles as p
+import edu.warbot.agents.agents as a
+import edu.warbot.agents.projectiles as p
 
 
 # =============================================================================#
