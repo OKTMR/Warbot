@@ -42,7 +42,6 @@ class GoHomeState(object):
 
     @staticmethod
     def execute():
-        return "die"
         setDebugString('gohome')
         if len(dico['percepts_allies_base']) != 0:
             base = dico['percepts_allies_base'][0]
