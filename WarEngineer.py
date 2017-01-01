@@ -35,16 +35,9 @@ class CreateTurretState(object):
     @staticmethod
     def execute():
         setNextBuildingToBuild(WarAgentType.WarTurret)
-        actionWarEngineer.nextState = GoDieState
+        actionWarEngineer.nextState = GoHomeState
 
         return build()
-
-
-class GoDieState(object):
-
-    @staticmethod
-    def execute():
-        return "die"
 
 
 class GoHomeState(object):
